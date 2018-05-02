@@ -1,0 +1,20 @@
+{
+  "name": "dnsproxy",
+  "version": "0.1.0",
+  "description": "Proxy your DNS request!",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "ccloli",
+  "license": "GPL-3.0",
+  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ccloli/DNSProxy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ccloli/DNSProxy/issues"
+  },
+  "homepage": "https://github.com/ccloli/DNSProxy#readme"
+}

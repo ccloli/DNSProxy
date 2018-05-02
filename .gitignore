@@ -1,0 +1,6 @@
+node_modules/
+rules/*
+!rules/.gitkeep
+config.json
+*.bak
+*.bak.*
