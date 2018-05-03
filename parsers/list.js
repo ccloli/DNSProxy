@@ -26,10 +26,11 @@ class list {
 			'*': '.*',
 			'?': '.'
 		};
-		if (str[0] === '.') {
-			str = '*' + str;
-		}
-		return new RegExp(`^${str.replace(/[.*?]/, c => charMap[c])}$`);
+		let res = str.replace(/[.*?]/, c => charMap[c]);
+		// if first character is dot, then treat it as `*.` or `@.`(null)
+		// e.g. `.example.com` will be `*.example.com` and `example.com`
+		res = res.replace(/^\\\./, '(.*\\.)?');
+		return new RegExp(`^${res}$`);
 	}
 
 	/**
