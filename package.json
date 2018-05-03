@@ -1,8 +1,11 @@
 {
   "name": "dnsproxy",
   "version": "0.1.0",
-  "description": "Proxy your DNS request!",
+  "description": "Proxy and forward your DNS request!",
   "main": "index.js",
+  "bin": {
+    "dnsproxy": "./cli.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
