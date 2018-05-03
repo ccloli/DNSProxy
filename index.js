@@ -55,7 +55,7 @@ const setupUDPServer = (host, port, rules) => {
 		const resolve = rules.resolve(packet.Question[0].Name);
 		const { server, index } = resolve;
 		packet.Question.forEach(question => {
-			console.log(`[UDP] Query [${question.Name}@${DNSTYPE[question.Type]}] --> ${server.host}:${server.port}@${server.type} ${index < 0 ? '' : `(#${index + 1})`}`);
+			console.log(`[UDP] Query [${question.Name}](${DNSTYPE[question.Type]}) --> ${server.host}:${server.port}@${server.type} ${index < 0 ? '' : `(#${index + 1})`}`);
 		});
 		lookup[server.type](msg, server);
 	});
@@ -133,7 +133,7 @@ const setupTCPServer = (host, port, rules) => {
 				const resolve = rules.resolve(packet.Question[0].Name);
 				const { server, index } = resolve;
 				packet.Question.forEach(question => {
-					console.log(`[TCP] Query [${question.Name}@${DNSTYPE[question.Type]}] --> ${server.host}:${server.port}@${server.type} ${index < 0 ? '' : `(#${index + 1})`}`);
+					console.log(`[TCP] Query [${question.Name}](${DNSTYPE[question.Type]}) --> ${server.host}:${server.port}@${server.type} ${index < 0 ? '' : `(#${index + 1})`}`);
 				});
 				lookup[server.type](received, server);
 			}
@@ -199,6 +199,10 @@ const init = () => {
 
 	let udpServer;
 	let tcpServer;
+	if (!config.udp.enable && !config.tcp.enable) {
+		console.log('Both TCP and UDP servers are not enabled');
+		return;
+	}
 	if (config.udp.enable) {
 		const { host, port } = config.udp;
 		udpServer = setupUDPServer(host, port, rules);
@@ -218,6 +222,7 @@ const init = () => {
 
 			case 0x12:
 				process.stdin.removeListener('data', closeListener);
+				console.log('Closing proxy servers...');
 				udpServer && udpServer.close();
 				tcpServer && tcpServer.close();
 				setTimeout(init, 0);
