@@ -59,7 +59,7 @@ class list {
 	 * @memberof list
 	 */
 	parse(data) {
-		const list = data.split(/\r?\n/).map(e => e.trim()).filter(e => e && e[0] !== '#');
+		const list = data.split(/\r?\n/).map(e => e.replace(/#.*/, '').trim()).filter(e => e);
 		const parsed = list.map(elem => {
 			try {
 				if (elem[0] === '/') {
