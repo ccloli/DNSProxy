@@ -237,4 +237,5 @@ const init = () => {
 	console.log('Press ^R to reload, ^C or ^Z to exit');
 };
 
+console.log(`DNSProxy v${process.env.npm_package_version || require('./package.json').version}\n`);
 init();
