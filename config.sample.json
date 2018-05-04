@@ -87,7 +87,7 @@
 		"server": "10.0.0.1"
 	}, {
 		// TODO: URL, support URL maybe coming soom
-		"url": "https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt",
+		"url": "https://example.com/proxy.txt",
 		// TODO: support autoproxy is coming soom
 		"type": "autoproxy",
 		"server": "[::1]:5353@tcp"
