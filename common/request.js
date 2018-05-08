@@ -2,31 +2,61 @@ const dgram = require('dgram');
 const net = require('net');
 const { isIPv6 } = require('./utils');
 
-const udpLookup = (msg, port, address) => {
+const udpLookup = (msg, port, address, timeout) => {
 	return new Promise((resolve, reject) => {
+		let closed = false;
+		let timer;
 		const client = dgram.createSocket(isIPv6(address) ? 'udp6' : 'udp4');
+
 		client.on('message', data => {
 			client.close();
 			resolve(data);
 			data = null;
 		});
-		client.on('error', reject);
+		client.on('close', () => {
+			closed = true;
+			if (timer) {
+				clearTimeout(timer);
+				timer = null;
+			}
+		});
+		client.on('error', (err) => {
+			reject(err);
+		});
 		client.send(msg, port, address, err => {
 			if (err) {
 				reject(err);
 			}
 		});
+
+		if (timeout) {
+			timer = setTimeout(() => {
+				timer = null;
+				if (!closed) {
+					client.close();
+				}
+			}, timeout);
+		}
 	});
 };
 
-const tcpLookup = (msg, port, address) => {
+const tcpLookup = (msg, port, address, timeout) => {
 	return new Promise((resolve, reject) => {
+		let closed = false;
+		let timer;
 		let length = 0;
 		let received = Buffer.alloc(0);
 
 		const client = net.createConnection(port, address, err => {
 			if (err) {
 				reject(err);
+			}
+		});
+		client.on('close', () => {
+			closed = true;
+			if (timer) {
+				clearTimeout(timer);
+				timer = null;
 			}
 		});
 		client.on('data', data => {
@@ -44,8 +74,19 @@ const tcpLookup = (msg, port, address) => {
 				received = null;
 			}
 		});
-		client.on('error', reject);
+		client.on('error', (err) => {
+			reject(err);
+		});
 		client.write(msg);
+
+		if (timeout) {
+			timer = setTimeout(() => {
+				timer = null;
+				if (!closed) {
+					client.close();
+				}
+			}, timeout);
+		}
 	});
 };
 
