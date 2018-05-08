@@ -5,6 +5,7 @@
  */
 class list {
 	constructor(data) {
+		this.pattern = [];
 		this.include = [];
 		this.exclude = [];
 
@@ -53,7 +54,11 @@ class list {
 	}
 
 	/**
-	 * Parse input data, save parsed data to this.patterns
+	 * Parse input data, save parsed patterns to this.patterns
+	 * 
+	 * Put include and exclude indexes to this.include and this.exclude,
+	 * so that when searching one rule type, the other one will not in queue,
+	 * so that we can skip most the unwanted data
 	 * 
 	 * @public 
 	 * @param {string} data - the data needs to parse
@@ -61,6 +66,7 @@ class list {
 	 */
 	parse(data) {
 		const list = data.split(/\r?\n/);
+		const pattern = [];
 		const include = [];
 		const exclude = [];
 		list.forEach(elem => {
@@ -76,20 +82,57 @@ class list {
 					return;
 				}
 
+				// `pattern` only store pattern
 				if (elem[0] === '/') {
-					target.push(this.parseRegExp(elem));
+					pattern.push(this.parseRegExp(elem));
 				}
 				else {
-					target.push(this.parseWildcard(elem));
+					pattern.push(this.parseWildcard(elem));
 				}
+
+				// cross-save indexes will help us split data and use in foreach
+				const index = pattern.length - 1;
+				target[index] = index;
 			}
 			catch(err) {
 				console.log(`Fail to parse rule ${elem}`);
 				console.log(err);
 			}
 		});
-		this.include = include.filter(e => e);
-		this.exclude = include.filter(e => e);
+		this.pattern = pattern;
+		this.include = include;
+		this.exclude = include;
+	}
+
+	crossTest(host, index = 0) {
+		// assume host doesn't match any include rules
+		let res = false;
+
+		// test include first
+		// if we don't set the field in array, it'll be a `empty` field,
+		// use `for...in` and other method will ignore `empty` field
+		// (however `for...of` will include empty field ¯\_(ツ)_/¯)
+		// as if the array is empty, its result maybe not in expected,
+		// so ALL the `return` only means skip the loop, the result is in `res`
+		this.include.slice(index).some(i => {
+			// as we cross-save indexes in `include` and `exclude`,
+			// `i` is the real index of target pattern
+			if (this.pattern[i].test(host)) {
+				// host matches any include rules
+				// assume host doesn't match any exclude rules
+				res = true;
+				this.exclude.slice(i).some(j => {
+					if (this.pattern[j].test(host)) {
+						// host matches any exclude rules
+						res = this.crossTest(host, j);
+						return true;
+					}
+				});
+				return true;
+			}
+		});
+
+		return res;
 	}
 
 	/**
@@ -101,22 +144,7 @@ class list {
 	 * @memberof list
 	 */
 	test(host) {
-		// test include first
-		for (let pattern of this.include) {
-			if (pattern.test(host)) {
-				// host matches any include rules
-				for (let pattern of this.exclude) {
-					if (pattern.test(host)) {
-						// host matches any exclude rules
-						return false;
-					}
-				}
-				// host doesn't match any exclude rules
-				return true;
-			}
-		}
-		// host doesn't match any include rules
-		return false;
+		return this.crossTest(host);
 	}
 }
 
