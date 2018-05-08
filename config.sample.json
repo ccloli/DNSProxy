@@ -2,23 +2,18 @@
 // You can use this sample to create your config file
 // Don't forget to remove ALL the comments
 {
-	// TCP server configuration
-	"tcp": {
-		// should DNSProxy support TCP lookup?
-		"enable": true,
-		// which IP to bind the TCP server?
+	// DNSProxy server configuration
+	"settings": {
+		// should DNSProxy support TCP lookup from client?
+		"tcp": true,
+		// should DNSProxy support UDP lookup from client?
+		"udp": true,
+		// which IP to bind the DNSProxy server?
 		"host": "::",
-		// which port to listen the TCP request?
-		"port": 53
-	},
-	// UDP server configuration
-	"udp": {
-		// should DNSProxy support UDP lookup?
-		"enable": true,
-		// which IP to bind the UDP server?
-		"host": "::",
-		// which port to listen the UDP request?
-		"port": 53
+		// which port to listen the client request?
+		"port": 53,
+		// when to close upstream lookup if no data response?
+		"timeout": 5000 // ms
 	},
 	// available name server list
 	"servers": {
@@ -45,7 +40,7 @@
 		"ipv6": {
 			// if you're using IPv6 server, quote IP address with []
 			// or it'll be parsed as combined host and port
-			"host": "[::1]:53",
+			"host": "[::1]:53"
 		},
 		// you can use a plain string instead of an object
 		// scheme is `<ip>[:<port = 53>][@<protocol = udp>]`

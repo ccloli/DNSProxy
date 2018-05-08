@@ -34,6 +34,7 @@ const udpLookup = (msg, port, address, timeout) => {
 				timer = null;
 				if (!closed) {
 					client.close();
+					reject(new Error('No data response'));
 				}
 			}, timeout);
 		}
@@ -84,6 +85,7 @@ const tcpLookup = (msg, port, address, timeout) => {
 				timer = null;
 				if (!closed) {
 					client.close();
+					reject(new Error('No data response'));
 				}
 			}, timeout);
 		}

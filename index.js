@@ -9,7 +9,7 @@ const loadConfig = require('./common/load-config');
 const RuleParser = require('./common/rule-parser');
 const { DNSTYPE } = require('./common/consts');
 
-const setupUDPServer = (host, port, rules) => {
+const setupUDPServer = (host, port, timeout, rules) => {
 	const udpServer = dgram.createSocket(isIPv6(host) ? 'udp6' : 'udp4');
 
 	udpServer.on('error', err => {
@@ -21,7 +21,7 @@ const setupUDPServer = (host, port, rules) => {
 		const lookup = {
 			tcp: (msg, server) => {
 				msg = udpPacketToTcpPacket(msg);
-				tcpLookup(msg, server.port, server.host).then(data => {
+				tcpLookup(msg, server.port, server.host, timeout).then(data => {
 					data = tcpPacketToUdpPacket(data);
 					udpServer.send(data, rinfo.port, rinfo.address, err => {
 						if (err) {
@@ -35,7 +35,7 @@ const setupUDPServer = (host, port, rules) => {
 				});
 			},
 			udp: (msg, server) => {
-				udpLookup(msg, server.port, server.host).then(data => {
+				udpLookup(msg, server.port, server.host, timeout).then(data => {
 					udpServer.send(data, rinfo.port, rinfo.address, err => {
 						if (err) {
 							console.log('[UDP] (UDP) Response Data Error');
@@ -72,7 +72,7 @@ const setupUDPServer = (host, port, rules) => {
 	return udpServer;
 };
 
-const setupTCPServer = (host, port, rules) => {
+const setupTCPServer = (host, port, timeout, rules) => {
 	const tcpServer = net.createServer();
 
 	tcpServer.on('error', err => {
@@ -86,7 +86,7 @@ const setupTCPServer = (host, port, rules) => {
 
 		const lookup = {
 			tcp: (msg, server) => {
-				tcpLookup(msg, server.port, server.host).then(data => {
+				tcpLookup(msg, server.port, server.host, timeout).then(data => {
 					socket.write(data, err => {
 						if (err) {
 							console.log('[TCP] (TCP) Response Data Error');
@@ -102,7 +102,7 @@ const setupTCPServer = (host, port, rules) => {
 			},
 			udp: (msg, server) => {
 				msg = tcpPacketToUdpPacket(msg);
-				udpLookup(msg, server.port, server.host).then(data => {
+				udpLookup(msg, server.port, server.host, timeout).then(data => {
 					data = udpPacketToTcpPacket(data);
 					socket.write(data, err => {
 						if (err) {
@@ -140,7 +140,7 @@ const setupTCPServer = (host, port, rules) => {
 		});
 		socket.on('error', (err) => {
 			console.log('[TCP] Connection Error');
-			console.log(err.stack);
+			console.log(err);
 			socket.end();
 		});
 	});
@@ -190,7 +190,7 @@ const init = () => {
 	console.log(`Loading config file '${input['config-file']}'...`);
 	const config = loadConfig(input['config-file']);
 
-	const { servers } = config;
+	const { servers, settings } = config;
 	const defaultServer = servers.default || servers[Object.keys(servers)[0]];
 	const rules = new RuleParser();
 	rules.initDefaultServer(defaultServer);
@@ -199,17 +199,17 @@ const init = () => {
 
 	let udpServer;
 	let tcpServer;
-	if (!config.udp.enable && !config.tcp.enable) {
+	if (!settings.udp && !settings.tcp) {
 		console.log('Both TCP and UDP servers are not enabled');
 		return;
 	}
-	if (config.udp.enable) {
-		const { host, port } = config.udp;
-		udpServer = setupUDPServer(host, port, rules);
+	if (settings.udp) {
+		const { host, port, timeout } = settings;
+		udpServer = setupUDPServer(host, port, timeout, rules);
 	}
-	if (config.tcp.enable) {
-		const { host, port } = config.tcp;
-		tcpServer = setupTCPServer(host, port, rules);
+	if (settings.tcp) {
+		const { host, port, timeout } = settings;
+		tcpServer = setupTCPServer(host, port, timeout, rules);
 	}
 
 	const closeListener = (data) => {

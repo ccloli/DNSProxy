@@ -2,15 +2,12 @@ const fs = require('fs');
 const { parseServer } = require('./utils');
 
 const defaultConfig = {
-	tcp: {
-		enable: false,
+	settings: {
+		tcp: false,
+		udp: false,
 		host: '::',
-		port: 53
-	},
-	udp: {
-		enable: false,
-		host: '::',
-		port: 53
+		port: 53,
+		timeout: 5000
 	},
 	servers: {
 		default: {
