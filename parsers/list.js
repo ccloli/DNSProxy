@@ -5,7 +5,8 @@
  */
 class list {
 	constructor(data) {
-		this.patterns = [];
+		this.include = [];
+		this.exclude = [];
 
 		if (data) {
 			this.parse(data);
@@ -59,20 +60,36 @@ class list {
 	 * @memberof list
 	 */
 	parse(data) {
-		const list = data.split(/\r?\n/).map(e => e.replace(/#.*/, '').trim()).filter(e => e);
-		const parsed = list.map(elem => {
+		const list = data.split(/\r?\n/);
+		const include = [];
+		const exclude = [];
+		list.forEach(elem => {
 			try {
-				if (elem[0] === '/') {
-					return this.parseRegExp(elem);
+				let target = include;
+				elem = elem.replace(/#.*/, '').trim();
+
+				if (elem[0] === '-') {
+					target = exclude;
+					elem = elem.substr(1);
 				}
-				return this.parseWildcard(elem);
+				if (!elem) {
+					return;
+				}
+
+				if (elem[0] === '/') {
+					target.push(this.parseRegExp(elem));
+				}
+				else {
+					target.push(this.parseWildcard(elem));
+				}
 			}
-			catch(e) {
+			catch(err) {
 				console.log(`Fail to parse rule ${elem}`);
-				console.log(e);
+				console.log(err);
 			}
-		}).filter(e => e);
-		this.patterns = parsed;
+		});
+		this.include = include.filter(e => e);
+		this.exclude = include.filter(e => e);
 	}
 
 	/**
@@ -84,11 +101,21 @@ class list {
 	 * @memberof list
 	 */
 	test(host) {
-		for (let pattern of this.patterns) {
+		// test include first
+		for (let pattern of this.include) {
 			if (pattern.test(host)) {
+				// host matches any include rules
+				for (let pattern of this.exclude) {
+					if (pattern.test(host)) {
+						// host matches any exclude rules
+						return false;
+					}
+				}
+				// host doesn't match any exclude rules
 				return true;
 			}
 		}
+		// host doesn't match any include rules
 		return false;
 	}
 }
