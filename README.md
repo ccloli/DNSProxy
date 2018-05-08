@@ -182,6 +182,8 @@ A `list` rule file is a list of domain. If a domain is in the list, then it'll m
 -   RegExp  
     You can use JavaScript-style regular expression to match, just quote it with a slash `/` like `/.*/`. But make sure it can be parsed by JavaScript and fit your Node.js environment, like lookbehind assertions (`(?<=)` in C#) cannot be accepted in most Node.js version, as it's added in ECMAScript 2018, so most of JavaScript environment don't support it.
 
+You can also set exclude rules by starting them with `-`, so that if some domains are matched a rule like sub domains, but you want to not match them. The rules will be tested in order, if a domain matches a include rule, it'll test the rest of exclude rules, and if it matches, then it'll test the rest of include rules, and so on.
+
 You should put your match rules in each line (split them with a "enter"). Here is an example of rule file, and the comments note how the match rules will work.
 
 ```sh
@@ -194,6 +196,9 @@ jkl.*             # will match `jkl.com`, `jkl.net`, `jkl.co.jp`
                   # won't match `mnop.com`, `mn.com`, `n.com`
 /^pqr[0-9]*\./    # regex, will match `pqr.com`, `pqr123.com`, but
                   # won't match `pqrst.com`, `sub.pqr.com`
+-.stu.def.com     # will exclude `stu.def.com` and `*.stu.def.com`,
+-/^\d+\.def\.com/ # and exclude `0.def.com`, `233.def.com` and so on,
+sub.stu.def.com   # but will include `sub.stu.def.com` again
 ```
 
 ## Extend
