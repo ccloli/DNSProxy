@@ -18,9 +18,9 @@ DNSProxy is a simple DNS proxy server, which helps you to forward DNS requests f
 
 ## Use Cases
 
-- Use TCP DNS on your operating system.
-- Use public DNS server but forward Intranet domains to your company DNS server.
-- Use DNS server provided by ISP for speed, and slower DNSCrypt server for poisoned domains.
+- Use TCP DNS on your operating system
+- Use public DNS server but forward Intranet domains to your company DNS server
+- Use DNS server provided by ISP for speed, and slower DNSCrypt server for poisoned domains
 
 ## Install
 
@@ -70,27 +70,29 @@ Your config will be merged with default config, if you don't specify some fields
 
 ```json
 {
-    "tcp": {                    // TCP proxy server config
-        "enable": false,        // enable TCP server
-        "host": "::",           // bind IP address, use IPv6 all-zero address ([::])
-                                // will also accept requests to IPv4 0.0.0.0
-        "port": 53              // TCP server listen port
+    "settings": {           // proxy server config
+        "tcp": false,       // see `proxy server settings` section
+        "udp": false,
+        "host": "::",
+        "port": 53,
+        "timeout": 5000
     },
-    "udp": {                    // UDP proxy server config
-        "enable": false,        // enable UDP server
-        "host": "::",           // bind IP address
-        "port": 53              // UDP server listen port
+    "servers": {            // name server list, see `Name server config` section
+        "default": {}       // a `default` server is required
     },
-    "servers": {                // name server list
-        "default": {            // a `default` server is required
-            "host": "8.8.8.8",  // see `Name server config` section for details
-            "port": 53,
-            "type": "udp"
-        }
-    },
-    "rules": []                 // proxy rules, see `Rule config` section
+    "rules": []             // proxy rules, see `Rule config` section
 }
 ```
+
+### Proxy server settings
+
+You can set how the proxy server works at `settings` field, like only enable TCP server, bind to a different port instead of `53` port.
+
+- `tcp`: Enable TCP proxy server or not
+- `udp`: Enable UDP proxy server or not
+- `host`: The IP address that proxy server will bind. Use IPv6 all-zero address (`[::]`) will also accept requests to IPv4 `0.0.0.0`, but set IPv4 address `0.0.0.0` will not accept requests to `[::]`
+- `port`: The port that proxy server will listen
+- `timeout`: The maximum time in millisecond (ms) to wait upstream name server responses. If the upstream server doesn't return data in time, the connection to it will close
 
 ### Name server config
 
@@ -182,7 +184,7 @@ A `list` rule file is a list of domain. If a domain is in the list, then it'll m
 
 You should put your match rules in each line (split them with a "enter"). Here is an example of rule file, and the comments note how the match rules will work.
 
-```
+```sh
 # rule.txt
 abc.com           # only match `abc.com` but won't match `sub.abc.com`
 *.def.com         # will match `sub.def.com` but won't match `def.com`
