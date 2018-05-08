@@ -9,13 +9,7 @@ const defaultConfig = {
 		port: 53,
 		timeout: 5000
 	},
-	servers: {
-		default: {
-			host: '8.8.8.8',
-			port: '53',
-			type: 'udp'
-		}
-	},
+	servers: {},
 	rules: []
 };
 
