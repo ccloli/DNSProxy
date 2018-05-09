@@ -101,33 +101,50 @@ class list {
 		});
 		this.pattern = pattern;
 		this.include = include;
-		this.exclude = include;
+		this.exclude = exclude;
 	}
 
-	crossTest(host, index = 0) {
-		// assume host doesn't match any include rules
-		let res = false;
-
-		// test include first
+	crossTest(host, exclude = false, index = 0) {
+		// test include first, then exclude
+		// 
 		// if we don't set the field in array, it'll be a `empty` field,
 		// use `for...in` and other method will ignore `empty` field
-		// (however `for...of` will include empty field ¯\_(ツ)_/¯)
-		// as if the array is empty, its result maybe not in expected,
-		// so ALL the `return` only means skip the loop, the result is in `res`
-		this.include.slice(index).some(i => {
+		// use this way we can skip most unwanted rules to test
+		// (however `for...of` will include `empty` field ¯\_(ツ)_/¯)
+		//
+		// if `for...of` ignores the `empty` field, the code can be written as
+		/*
+		for (let i of this.include.slice(index)) {
+			if (this.pattern[i].test(host)) {
+				for (let j of this.exclude.slice(i)) {
+					if (this.pattern[j].test(host)) {
+						return this.crossTest(host, j);
+					}
+				}
+				return true;
+			}
+		}
+		return false;
+		*/
+
+		// assume host doesn't match any rules
+		let res = false;
+		const target = exclude ? this.exclude : this.include;
+
+		// use `Array.prototype.some` to iterate the array,
+		// as `for...of` will include the empty fields
+		// but we don't use the return result as the final result,
+		// because if the result is `false`, it'll continue to test the rest,
+		// so we record the result manually, and use `return true` to break the loop
+		target.slice(index).some(i => {
 			// as we cross-save indexes in `include` and `exclude`,
 			// `i` is the real index of target pattern
 			if (this.pattern[i].test(host)) {
-				// host matches any include rules
-				// assume host doesn't match any exclude rules
-				res = true;
-				this.exclude.slice(i).some(j => {
-					if (this.pattern[j].test(host)) {
-						// host matches any exclude rules
-						res = this.crossTest(host, j);
-						return true;
-					}
-				});
+				// host matches any rules
+				// test the rest of another type rules
+				// `res` is the final result
+				res = !this.crossTest(host, !exclude, i);
+				// `return true` only means break the loop
 				return true;
 			}
 		});
