@@ -80,7 +80,7 @@ class RuleParser {
 				console.log(`Rule #${index} cannot be parsed`);
 				console.log(err);
 			}
-		});
+		}).filter(e => e);
 	}
 
 	resolve(domain) {
