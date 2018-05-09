@@ -56,9 +56,9 @@ Once it runs, you can press `Ctrl + R` to reload config, press `Ctrl + C` or `Ct
 
 ### Create a config file
 
-The config file is a JSON file, it should follow the JSON structure.
+The config file is a JSON file, it should follow the JSON structure. But you can add comments using JavaScript style (`//` or `/* */`) in it, as they'll be removed when parsing.
 
-To create a config file, you can use the sample file as template, then edit it as you like, then remove all the comments and save. 
+To create a config file, you can use the sample file as template, then edit it as you like and save. 
 
 ```sh
 cp config.sample.json config.json
@@ -68,7 +68,7 @@ cp config.sample.json config.json
 
 Your config will be merged with default config, if you don't specify some fields, they'll be overwritten by default config.
 
-```json
+```js
 {
     "settings": {           // proxy server config
         "tcp": false,       // see `proxy server settings` section
@@ -102,7 +102,7 @@ You should specify a `default` server, so that if a domain doesn't match any rul
 
 The name server config accepts the following formats:
 
-```json
+```js
 // a common plain object, specify all the needed fields
 { "host": "127.0.0.1", "port": 53, "type": "udp" }
 
@@ -132,7 +132,7 @@ You can set some rules to match the lookup name, the matched name will be looked
 
 A common rule config should use the following format, but should notice that if you're using some extend rules written by community, you should use that specific format if it has.
 
-```json
+```js
 {
     "file": "<file-path>",     // rule file 
     "type": "<rule-type>",     // rule type, see `Rule Parser` section for more info
@@ -142,7 +142,7 @@ A common rule config should use the following format, but should notice that if 
 
 To make it clear, suppose you define 2 name servers in `servers`, named `default` and `google`. And you have 2 `list` type rules, one will use the `google` name server, and another one will use a server not defined in `servers`, you can set your config file like this.
 
-```json
+```js
 {
     "tcp": { ... },
     "udp": { ... },
@@ -271,7 +271,7 @@ example.prototype = {
 
 After you finish the work, put the file to somewhere safe. Then add an array field `extend-parsers` to your config file if it doesn't have, and put the file path in it like this, save and reload to have a test!
 
-```json
+```js
 {
     ...
     "extend-parsers": [

@@ -1,6 +1,5 @@
 // This is a sample of DNSProxy config file
 // You can use this sample to create your config file
-// Don't forget to remove ALL the comments
 {
 	// DNSProxy server configuration
 	"settings": {
@@ -49,9 +48,11 @@
 	},
 	// extend rule parsers
 	// you can import some other parsers written by you or some other guy
-	// then you can use them in `rules` 
+	// then you can use them in `rules`
+	// note if you're using Windows, use slash (/) or two backslashes (\\)
 	"extend-parsers": [
-		"path/to/parser.js"
+		"path/to/parser.js",
+		"path\\to\\another\\parser.js"
 	],
 	// look up rules
 	// which rule defines first, which rule has a higher priority
