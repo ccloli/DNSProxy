@@ -56,7 +56,7 @@ Once it runs, you can press `Ctrl + R` to reload config, press `Ctrl + C` or `Ct
 
 ### Create a config file
 
-The config file is a JSON file, it should follow the JSON structure. But you can add comments using JavaScript style (`//` or `/* */`) in it, as they'll be removed when parsing.
+The config file is a JSON file, it should follow the JSON structure. But you can add comments using JavaScript-styled (`//` or `/* */`) in it, as they'll be removed when parsing.
 
 To create a config file, you can use the sample file as template, then edit it as you like and save. 
 

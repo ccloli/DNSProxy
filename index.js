@@ -21,31 +21,29 @@ const setupUDPServer = (host, port, timeout, rules) => {
 		const lookup = {
 			tcp: (msg, server) => {
 				msg = udpPacketToTcpPacket(msg);
-				tcpLookup(msg, server.port, server.host, timeout).then(data => {
+				return Promise.resolve(tcpLookup(msg, server.port, server.host, timeout).then(data => {
 					data = tcpPacketToUdpPacket(data);
-					udpServer.send(data, rinfo.port, rinfo.address, err => {
-						if (err) {
-							console.log('[UDP] (TCP) Response Data Error');
-							console.log(err);
-						}
+					return new Promise((resolve, reject) => {
+						udpServer.send(data, rinfo.port, rinfo.address, err => {
+							if (err) {
+								return reject(err);
+							}
+							resolve();
+						});
 					});
-				}).catch(err => {
-					console.log('[UDP] (TCP) Request Data Error');
-					console.log(err);
-				});
+				}));
 			},
 			udp: (msg, server) => {
-				udpLookup(msg, server.port, server.host, timeout).then(data => {
-					udpServer.send(data, rinfo.port, rinfo.address, err => {
-						if (err) {
-							console.log('[UDP] (UDP) Response Data Error');
-							console.log(err);
-						}
+				return Promise.resolve(udpLookup(msg, server.port, server.host, timeout).then(data => {
+					return new Promise((resolve, reject) => {
+						udpServer.send(data, rinfo.port, rinfo.address, err => {
+							if (err) {
+								return reject(err);
+							}
+							resolve();
+						});
 					});
-				}).catch(err => {
-					console.log('[UDP] (UDP) Request Data Error');
-					console.log(err);
-				});
+				}));
 			}
 		};
 
@@ -55,9 +53,14 @@ const setupUDPServer = (host, port, timeout, rules) => {
 		const resolve = rules.resolve(packet.Question[0].Name);
 		const { server, index } = resolve;
 		packet.Question.forEach(question => {
-			console.log(`[UDP] Query [${question.Name}](${DNSTYPE[question.Type]}) --> ${server.host}:${server.port}@${server.type} ${index < 0 ? '' : `(#${index + 1})`}`);
+			console.log(`[UDP] Query [${question.Name}](${DNSTYPE[question.Type]}) --> ${
+				server.host}:${server.port}@${server.type} ${index < 0 ? '' : `(#${index + 1})`}`);
 		});
-		lookup[server.type](msg, server);
+		lookup[server.type](msg, server).catch(err => {
+			console.log(`[UDP] (${server.type.toUpperCase()}) Request Data Error (${
+				server.host}:${server.port}@${server.type})`);
+			console.log(err);
+		});
 	});
 
 	udpServer.on('listening', () => {
@@ -86,36 +89,32 @@ const setupTCPServer = (host, port, timeout, rules) => {
 
 		const lookup = {
 			tcp: (msg, server) => {
-				tcpLookup(msg, server.port, server.host, timeout).then(data => {
-					socket.write(data, err => {
-						if (err) {
-							console.log('[TCP] (TCP) Response Data Error');
-							console.log(err);
-						}
-						socket.end();
+				return Promise.resolve(tcpLookup(msg, server.port, server.host, timeout).then(data => {
+					return new Promise((resolve, reject) => {
+						socket.write(data, err => {
+							socket.end();
+							if (err) {
+								return reject(err);
+							}
+							resolve();
+						});
 					});
-				}).catch(err => {
-					console.log('[TCP] (TCP) Request Data Error');
-					console.log(err);
-					socket.end();
-				});
+				}));
 			},
 			udp: (msg, server) => {
 				msg = tcpPacketToUdpPacket(msg);
-				udpLookup(msg, server.port, server.host, timeout).then(data => {
+				return Promise.resolve(tcpLookup(msg, server.port, server.host, timeout).then(data => {
 					data = udpPacketToTcpPacket(data);
-					socket.write(data, err => {
-						if (err) {
-							console.log('[TCP] (UDP) Response Data Error');
-							console.log(err);
-						}
-						socket.end();
+					return new Promise((resolve, reject) => {
+						socket.write(data, err => {
+							socket.end();
+							if (err) {
+								return reject(err);
+							}
+							resolve();
+						});
 					});
-				}).catch(err => {
-					console.log('[TCP] (UDP) Request Data Error');
-					console.log(err);
-					socket.end();
-				});
+				}));
 			}
 		};
 
@@ -133,9 +132,14 @@ const setupTCPServer = (host, port, timeout, rules) => {
 				const resolve = rules.resolve(packet.Question[0].Name);
 				const { server, index } = resolve;
 				packet.Question.forEach(question => {
-					console.log(`[TCP] Query [${question.Name}](${DNSTYPE[question.Type]}) --> ${server.host}:${server.port}@${server.type} ${index < 0 ? '' : `(#${index + 1})`}`);
+					console.log(`[TCP] Query [${question.Name}](${DNSTYPE[question.Type]}) --> ${
+						server.host}:${server.port}@${server.type} ${index < 0 ? '' : `(#${index + 1})`}`);
 				});
-				lookup[server.type](received, server);
+				lookup[server.type](received, server).catch(err => {
+					console.log(`[TCP] (${server.type.toUpperCase()}) Request Data Error (${
+						server.host}:${server.port}@${server.type})`);
+					console.log(err);
+				});
 			}
 		});
 		socket.on('error', (err) => {
