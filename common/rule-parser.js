@@ -18,7 +18,7 @@ class RuleParser {
 
 		let defaultPath = fs.readdirSync(dir).filter(e => /\.js$/.test(e));
 		defaultPath = defaultPath.map(e => path.resolve(dir, e));
-		extendPath = extendPath.map(e => path.resolve(configPath, e));
+		extendPath = extendPath.map(e => path.resolve(path.dirname(configPath), e));
 
 		[...defaultPath, ...extendPath].forEach(item => {
 			try {
@@ -54,7 +54,7 @@ class RuleParser {
 					throw new ReferenceError(`Parser '${type}' is not defined`);
 				}
 
-				const exactFile = path.resolve(configPath, file);
+				const exactFile = path.resolve(path.dirname(configPath), file);
 
 				try {
 					const data = fs.readFileSync(exactFile, 'utf8');
