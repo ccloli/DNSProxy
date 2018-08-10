@@ -9,8 +9,8 @@ const parseServer = (input) => {
 	const parseString = (str) => {
 		let [server, type] = str.trim().split('@', 2);
 		// lookbehind assertions finally added in ECMAScript 2018
-		// for compatibility, use match instead
 		// str.split(/(?<=(?:[0-9.]+|\[[0-9a-fA-F:.]+\])):/)
+		// for compatibility, use match instead
 		let [, host, port] = server.match(/^([0-9.]+|\[[0-9a-fA-F:.]+\])(?::(\d+))?$/) || [];
 		return {
 			host,

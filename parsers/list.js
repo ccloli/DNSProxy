@@ -104,12 +104,26 @@ class list {
 		this.exclude = exclude;
 	}
 
+	/**
+	 * Test if domain matches include or exclude rules
+	 * 
+	 * If a rule matches one of include rules, then it'll test the rest 
+	 * of exclude rules, and if it matches one, it'll test the rest of 
+	 * include rules, and so on, until test all the rest rules.
+	 * 
+	 * @private
+	 * @param {string} host - the domain name needs to be checked
+	 * @param {boolean} [exclude=false] - test exclude rules or not
+	 * @param {number} [index=0] - start index
+	 * @returns  {boolean} the host should be include or not
+	 * @memberof list
+	 */
 	crossTest(host, exclude = false, index = 0) {
 		// test include first, then exclude
 		// 
 		// if we don't set the field in array, it'll be a `empty` field,
-		// use `for...in` and other method will ignore `empty` field
-		// use this way we can skip most unwanted rules to test
+		// use `for...in` and ES5 Array methods will ignore `empty` fields
+		// with this way we can skip most unwanted rules to test
 		// (however `for...of` will include `empty` field ¯\_(ツ)_/¯)
 		//
 		// if `for...of` ignores the `empty` field, the code can be written as

@@ -18,42 +18,44 @@ const setupUDPServer = (host, port, timeout, rules) => {
 	});
 
 	udpServer.on('message', (msg, rinfo) => {
+		const response = (data) => {
+			return new Promise((resolve, reject) => {
+				udpServer.send(data, rinfo.port, rinfo.address, err => {
+					data = null;
+					if (err) {
+						return reject(err);
+					}
+					resolve();
+				});
+			});
+		};
 		const lookup = {
 			tcp: (msg, server) => {
 				msg = udpPacketToTcpPacket(msg);
 				return Promise.resolve(tcpLookup(msg, server.port, server.host, timeout).then(data => {
 					data = tcpPacketToUdpPacket(data);
-					return new Promise((resolve, reject) => {
-						udpServer.send(data, rinfo.port, rinfo.address, err => {
-							msg = null;
-							data = null;
-							if (err) {
-								return reject(err);
-							}
-							resolve();
-						});
-					});
+					msg = null;
+					return response(data);
 				}));
 			},
 			udp: (msg, server) => {
 				return Promise.resolve(udpLookup(msg, server.port, server.host, timeout).then(data => {
-					return new Promise((resolve, reject) => {
-						udpServer.send(data, rinfo.port, rinfo.address, err => {
-							msg = null;
-							data = null;
-							if (err) {
-								return reject(err);
-							}
-							resolve();
-						});
-					});
+					msg = null;
+					return response(data);
 				}));
 			}
 		};
 
 		const packet = parseUDPPacket(msg);
-		// we can only resolve the first question,
-		// thought most of requests has only one question
+		// we can only resolve the first question, as DNSProxy only does "forward"
+		// that means DNSProxy won't modify the struct or content of packets mostly,
+		// or say most of the data will be transferred "as-is" (except triming or 
+		// adding TCP DNS header if needed)
+		// thought RFC doesn't say you can only send one question per request, 
+		// luckily in practice most of requests has only one question, and some DNS
+		// server doesn't accept multiple questions, too
+		// see https://stackoverflow.com/questions/4082081
+		// so as for now, we can assume all the packets will have only one question
 		const resolve = rules.resolve(packet.Question[0].Name);
 		const { server, index } = resolve;
 		packet.Question.forEach(question => {
@@ -70,7 +72,7 @@ const setupUDPServer = (host, port, timeout, rules) => {
 
 	udpServer.on('listening', () => {
 		let { address, port } = udpServer.address();
-		if (address.indexOf(':') >= 0) {
+		if (isIPv6(address)) {
 			address = `[${address}]`;
 		}
 		console.log(`[UDP] server listening ${address}:${port}`);
@@ -92,37 +94,31 @@ const setupTCPServer = (host, port, timeout, rules) => {
 		let length = 0;
 		let received = Buffer.alloc(0);
 
+		const response = (data) => {
+			return new Promise((resolve, reject) => {
+				socket.write(data, err => {
+					socket.end();
+					data = null;
+					if (err) {
+						return reject(err);
+					}
+					resolve();
+				});
+			});
+		};
 		const lookup = {
 			tcp: (msg, server) => {
 				return Promise.resolve(tcpLookup(msg, server.port, server.host, timeout).then(data => {
-					return new Promise((resolve, reject) => {
-						socket.write(data, err => {
-							socket.end();
-							msg = null;
-							data = null;
-							if (err) {
-								return reject(err);
-							}
-							resolve();
-						});
-					});
+					msg = null;
+					return response(data);
 				}));
 			},
 			udp: (msg, server) => {
 				msg = tcpPacketToUdpPacket(msg);
 				return Promise.resolve(tcpLookup(msg, server.port, server.host, timeout).then(data => {
 					data = udpPacketToTcpPacket(data);
-					return new Promise((resolve, reject) => {
-						socket.write(data, err => {
-							socket.end();
-							msg = null;
-							data = null;
-							if (err) {
-								return reject(err);
-							}
-							resolve();
-						});
-					});
+					msg = null;
+					return response(data);
 				}));
 			}
 		};
@@ -162,7 +158,7 @@ const setupTCPServer = (host, port, timeout, rules) => {
 
 	tcpServer.on('listening', () => {
 		let { address, port } = tcpServer.address();
-		if (address.indexOf(':') >= 0) {
+		if (isIPv6(address)) {
 			address = `[${address}]`;
 		}
 		console.log(`[TCP] server listening ${address}:${port}`);
@@ -192,7 +188,7 @@ const loadInput = () => {
 		}
 	}
 
-	// if not specify config file, load from environment variable
+	// if no config file specified, load from environment variable
 	if (!input['config-file']) {
 		input['config-file'] = process.env.DNSPROXY_CONFIG || path.resolve('./config.json');
 	}
