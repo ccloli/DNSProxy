@@ -21,9 +21,11 @@ const udpLookup = (msg, port, address, timeout) => {
 			}
 		});
 		client.on('error', (err) => {
+			msg = null;
 			reject(err);
 		});
 		client.send(msg, port, address, err => {
+			msg = null;
 			if (err) {
 				reject(err);
 			}
@@ -50,6 +52,7 @@ const tcpLookup = (msg, port, address, timeout) => {
 
 		const client = net.createConnection(port, address, err => {
 			if (err) {
+				msg = null;
 				reject(err);
 			}
 		});
@@ -76,9 +79,11 @@ const tcpLookup = (msg, port, address, timeout) => {
 			}
 		});
 		client.on('error', (err) => {
+			msg = null;
 			reject(err);
 		});
 		client.write(msg);
+		msg = null;
 
 		if (timeout) {
 			timer = setTimeout(() => {

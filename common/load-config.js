@@ -80,6 +80,7 @@ const loadConfig = (path) => {
 		);
 		config = JSON.parse(file);
 	}
+	file = null;
 
 	// only merge the first level and second level config
 	const result = Object.assign({}, defaultConfig, config);

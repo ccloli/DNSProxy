@@ -25,6 +25,8 @@ const setupUDPServer = (host, port, timeout, rules) => {
 					data = tcpPacketToUdpPacket(data);
 					return new Promise((resolve, reject) => {
 						udpServer.send(data, rinfo.port, rinfo.address, err => {
+							msg = null;
+							data = null;
 							if (err) {
 								return reject(err);
 							}
@@ -37,6 +39,8 @@ const setupUDPServer = (host, port, timeout, rules) => {
 				return Promise.resolve(udpLookup(msg, server.port, server.host, timeout).then(data => {
 					return new Promise((resolve, reject) => {
 						udpServer.send(data, rinfo.port, rinfo.address, err => {
+							msg = null;
+							data = null;
 							if (err) {
 								return reject(err);
 							}
@@ -61,6 +65,7 @@ const setupUDPServer = (host, port, timeout, rules) => {
 				server.host}:${server.port}@${server.type})`);
 			console.log(err);
 		});
+		msg = null;
 	});
 
 	udpServer.on('listening', () => {
@@ -93,6 +98,8 @@ const setupTCPServer = (host, port, timeout, rules) => {
 					return new Promise((resolve, reject) => {
 						socket.write(data, err => {
 							socket.end();
+							msg = null;
+							data = null;
 							if (err) {
 								return reject(err);
 							}
@@ -108,6 +115,8 @@ const setupTCPServer = (host, port, timeout, rules) => {
 					return new Promise((resolve, reject) => {
 						socket.write(data, err => {
 							socket.end();
+							msg = null;
+							data = null;
 							if (err) {
 								return reject(err);
 							}
@@ -140,12 +149,14 @@ const setupTCPServer = (host, port, timeout, rules) => {
 						server.host}:${server.port}@${server.type})`);
 					console.log(err);
 				});
+				received = null;
 			}
 		});
 		socket.on('error', (err) => {
+			socket.end();
 			console.log('[TCP] Connection Error');
 			console.log(err);
-			socket.end();
+			received = null;
 		});
 	});
 
