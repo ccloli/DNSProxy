@@ -205,8 +205,8 @@ const init = () => {
 	const defaultServer = servers.default || servers[Object.keys(servers)[0]];
 	const rules = new RuleParser();
 	rules.initDefaultServer(defaultServer);
-	rules.initParsers(config['extend-parsers']);
-	rules.initRules(config.rules);
+	rules.initParsers(config['extend-parsers'], input['config-file']);
+	rules.initRules(config.rules, input['config-file']);
 
 	let udpServer;
 	let tcpServer;

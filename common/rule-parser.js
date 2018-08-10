@@ -13,12 +13,12 @@ class RuleParser {
 		this.defaultServer = server;
 	}
 
-	initParsers(extendPath = []) {
+	initParsers(extendPath = [], configPath) {
 		const parser = {};
 
 		let defaultPath = fs.readdirSync(dir).filter(e => /\.js$/.test(e));
 		defaultPath = defaultPath.map(e => path.resolve(dir, e));
-		extendPath = extendPath.map(e => path.resolve(process.cwd(), e));
+		extendPath = extendPath.map(e => path.resolve(configPath, e));
 
 		[...defaultPath, ...extendPath].forEach(item => {
 			try {
@@ -40,7 +40,7 @@ class RuleParser {
 		this.parser = parser;
 	}
 
-	initRules(rules = []) {
+	initRules(rules = [], configPath) {
 		this.inputRules = rules;
 
 		// TODO: use asynchronous way to parse
@@ -54,7 +54,7 @@ class RuleParser {
 					throw new ReferenceError(`Parser '${type}' is not defined`);
 				}
 
-				const exactFile = path.resolve(process.cwd(), file);
+				const exactFile = path.resolve(configPath, file);
 
 				try {
 					const data = fs.readFileSync(exactFile, 'utf8');
