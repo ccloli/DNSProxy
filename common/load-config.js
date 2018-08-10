@@ -49,7 +49,7 @@ const loadConfig = (path) => {
 		//       )*?
 		//       "                   # - string end
 		//       |
-		//       [\d.]+              # numbers
+		//       [\d.Ee+-]+              # numbers
 		//       |
 		//       true|false          # boolean
 		//       |
@@ -75,7 +75,7 @@ const loadConfig = (path) => {
 		//   $                       # case EOF, or it'll in endless loop!!!
 		// )
 		file = file.replace(
-			/((?:[:,{}[\]\s]*(?:"(?:(?:[^"]*(?:\\[^"])*?)*(?:\\")?)*?"|[\d.]+|true|false|null)?)*)(?:((?:\/\/.*?(?=\r|\n|$))|(?:\/\*[\s\S]*?(?:\*\/|$))+)|$)/g,
+			/((?:[:,{}[\]\s]*(?:"(?:(?:[^"]*(?:\\[^"])*?)*(?:\\")?)*?"|[\d.Ee+-]+|true|false|null)?)*)(?:((?:\/\/.*?(?=\r|\n|$))|(?:\/\*[\s\S]*?(?:\*\/|$))+)|$)/g,
 			'$1'
 		);
 		config = JSON.parse(file);
