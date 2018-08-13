@@ -69,7 +69,7 @@ const parseLookupName = (data, offset) => {
 			if (cur.byteLength !== length) {
 				throw new Error('Domain name is incomplete.');
 			}
-			return cur.toString() + '.' + parse(pieces.slice(1 + length));
+			return cur.toString('binary') + '.' + parse(pieces.slice(1 + length));
 		}
 	};
 	return {
