@@ -62,6 +62,29 @@ const sumBuffer = (buffer) => {
 	}, 0);
 };
 
+const intToBuffer = (data, length) => {
+	let hex = data.toString(16);
+	// if the length of `hex` is odd, the last letter will be ignored like this:
+	// 'b16212c' => Buffer.from('b16212', 'hex') /* ignores 'c' */ => [177, 98, 18]
+	// so we should prefix it with padding zero like this:
+	// '0b16212c' => Buffer.from('0b16212c', 'hex') => [11, 22, 33, 44]
+	if (hex.length & 1) {
+		hex = '0' + hex;
+	}
+	let buffer = Buffer.from(hex, 'hex');
+	if (length) {
+		if (length > buffer.length) {
+			// fill high bits with zero
+			return Buffer.concat([Buffer.alloc(length - buffer.length), buffer]);
+		}
+		else if (length < buffer.length) {
+			// drop high bits
+			return Buffer.slice(-length);
+		}
+	}
+	return buffer;
+};
+
 const reverseFill = (data) => {
 	const list = Object.keys(data);
 	list.forEach(key => {
@@ -259,6 +282,7 @@ module.exports = {
 	addIPv6Bracket,
 	parseServer,
 	sumBuffer,
+	intToBuffer,
 	reverseFill,
 	bufferToIP,
 	ipToBuffer,
