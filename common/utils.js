@@ -27,6 +27,10 @@ const parseServer = (input) => {
 			host = parsed.host || host;
 			port = parsed.port || port;
 		}
+		// the default port of DNS-over-TLS is 853
+		if (type === 'tls') {
+			init.port = 853;
+		}
 
 		return {
 			host: host || init.host,
@@ -35,7 +39,15 @@ const parseServer = (input) => {
 		};
 	}
 	else if (typeof input === 'string') {
-		return parseString(input);
+		const { host, port, type } = parseString(input);
+		if (type === 'tls') {
+			init.port = 853;
+		}
+		return {
+			host: host || init.host,
+			port: port || init.port,
+			type: type || init.type
+		};
 	}
 	else {
 		return null;
