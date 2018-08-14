@@ -35,7 +35,7 @@ const generateHeader = (data) => {
 	const NSCount = intToBuffer(data.NSCount, 2);
 	const ARCount = intToBuffer(data.ARCount, 2);
 
-	return Buffer.concat(id, config, QDCount, ANCount, NSCount, ARCount);
+	return Buffer.concat([id, config, QDCount, ANCount, NSCount, ARCount]);
 };
 
 const generateLookupName = (data) => {
@@ -59,7 +59,7 @@ const generateQuestion = (data) => {
 	const Type = intToBuffer(data.Type, 2);
 	const Class = intToBuffer(data.Class, 2);
 	
-	return Buffer.concat(Name, Type, Class);
+	return Buffer.concat([Name, Type, Class]);
 };
 
 const generateAnswer = (data) => {
@@ -85,7 +85,7 @@ const generateAnswer = (data) => {
 	const RDLength = intToBuffer(data.RDLength, 2);
 	const RData = data.RData;
 
-	return Buffer.concat(Name, Type, Class, TTL, RDLength, RData);
+	return Buffer.concat([Name, Type, Class, TTL, RDLength, RData]);
 };
 
 // Authority and Additional are using the same struct as Answer
