@@ -1,7 +1,7 @@
 const dgram = require('dgram');
 const net = require('net');
 const path = require('path');
-const { udpLookup, tcpLookup } = require('./common/request');
+const { udpLookup, tcpLookup, tlsLookup } = require('./common/request');
 const { udpPacketToTcpPacket, tcpPacketToUdpPacket } = require('./common/convert');
 const { parseTCPPacket, parseUDPPacket } = require('./common/packet-parser');
 const { isIPv6 } = require('./common/utils');
@@ -40,6 +40,14 @@ const setupUDPServer = (host, port, timeout, rules) => {
 			},
 			udp: (msg, server) => {
 				return Promise.resolve(udpLookup(msg, server.port, server.host, timeout).then(data => {
+					msg = null;
+					return response(data);
+				}));
+			},
+			tls: (msg, server) => {
+				msg = udpPacketToTcpPacket(msg);
+				return Promise.resolve(tlsLookup(msg, server.port, server.host, timeout).then(data => {
+					data = tcpPacketToUdpPacket(data);
 					msg = null;
 					return response(data);
 				}));
@@ -117,6 +125,12 @@ const setupTCPServer = (host, port, timeout, rules) => {
 				msg = tcpPacketToUdpPacket(msg);
 				return Promise.resolve(tcpLookup(msg, server.port, server.host, timeout).then(data => {
 					data = udpPacketToTcpPacket(data);
+					msg = null;
+					return response(data);
+				}));
+			},
+			tls: (msg, server) => {
+				return Promise.resolve(tlsLookup(msg, server.port, server.host, timeout).then(data => {
 					msg = null;
 					return response(data);
 				}));
