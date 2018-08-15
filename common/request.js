@@ -90,7 +90,7 @@ const tcpLookup = (msg, port, address, timeout) => {
 			timer = setTimeout(() => {
 				timer = null;
 				if (!closed) {
-					client.close();
+					client.end();
 					reject(new Error('No data response'));
 				}
 			}, timeout);
@@ -134,6 +134,8 @@ const tlsLookup = (msg, port, address, timeout) => {
 				// say we cannot reuse the connection, and creating a TLS connection takes
 				// more time than a normal TCP connection as the client and server needs
 				// more steps to handshake.
+				//
+				//  > RFC7766 DNS over TCP 
 				//  > 6.1.1.  Clients
 				//  >    There is no clear guidance today in any RFC as to when a DNS client
 				//  >    should close a TCP connection, and there are no specific
@@ -141,9 +143,30 @@ const tlsLookup = (msg, port, address, timeout) => {
 				//  >    the time of writing, it is common practice for clients to close the
 				//  >    TCP connection after sending a single request (apart from the SOA/
 				//  >    AXFR case).
+				//
+				// So in RFC7858, it says we shouldn't close the connection immediately, and
+				// we should reuse the connection until it's idle.
+				//
+				//  > RFC7858 DNS over TLS
+				//  > 3.4.  Connection Reuse, Close, and Reestablishment
+				//  >    In order to amortize TCP and TLS connection setup costs, clients and
+				//  >    servers SHOULD NOT immediately close a connection after each
+				//  >    response.Instead, clients and servers SHOULD reuse existing
+				//  >    connections for subsequent queries as long as they have sufficient
+				//  >    resources.In some cases, this means that clients and servers may
+				//  >    need to keep idle connections open for some amount of time.
+				//  >
+				//  >    Proper management of established and idle connections is important to
+				//  >    the healthy operation of a DNS server.An implementor of DNS over
+				//  >    TLS SHOULD follow best practices for DNS over TCP, as described in
+				//  >    [RFC7766].Failure to do so may lead to resource exhaustion and
+				//  >    denial of service.
+				//
 				// However we cannot split packets if multiple DNS requests are responsing
 				// at this time, and we don't have a good algorithm to make sure when the 
 				// socket is idle and can close the connection safely. 
+				//
+				//  > RFC7766 DNS over TCP 
 				//  > 6.2.3.  Idle Timeouts
 				//  >    To mitigate the risk of unintentional server overload, DNS clients
 				//  >    MUST take care to minimise the idle time of established DNS-over-TCP
@@ -151,6 +174,7 @@ const tlsLookup = (msg, port, address, timeout) => {
 				//  >    TCP connection of an idle session, unless an idle timeout has been
 				//  >    established using some other signalling mechanism, for example,
 				//  >    [edns-tcp-keepalive].
+				//
 				// So at this time, we'll close each connection when it responses, but this
 				// may makes your other software get confused if it doesn't get response in
 				// time. For example, when I testing the TLS lookup with CloudFlare TLS DNS

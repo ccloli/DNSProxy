@@ -10,8 +10,9 @@ DNSProxy is a simple DNS proxy server, which helps you to forward DNS requests f
 ## Features
 
 - Bind proxy server with any IP or port
-- Support TCP and UDP protocol
-- Lookup upstream server with specific port and protocol (UDP, TCP)
+- Support TCP and UDP protocol to create proxy server
+- Lookup upstream server with specific port and common protocol (UDP, TCP)
+- Lookup upstream server with DNS-over-TLS (experiment)
 - Both proxy server and upstream server support IPv4 and IPv6
 - Wildcard rules and regular expression rules
 - Custom parser to extend more rules!
@@ -123,6 +124,7 @@ The name server config accepts the following formats:
 "[::1]:5353@tcp"
 "127.0.0.1:53"
 "127.0.0.1@udp"
+"127.0.0.1:853@tls"
 "127.0.0.1"
 ```
 

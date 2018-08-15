@@ -25,7 +25,7 @@
 			// name server port
 			// if you emit port, it'll be `53`
 			"port": "53",
-			// name server protocol, `tcp` or `udp`
+			// name server protocol, `tcp`, `udp` or `tls`
 			// if you emit protocol, it'll be `udp`
 			"type": "udp"
 		},
@@ -41,10 +41,18 @@
 			// or it'll be parsed as combined host and port
 			"host": "[::1]:53"
 		},
+		"tls": {
+			// DNS-over-TLS lookup is supported
+			"host": "127.0.0.1",
+			// if you emit port, it'll be `853` for `tls`
+			"port": "853",
+			"type": "tls"
+		},
 		// you can use a plain string instead of an object
 		// scheme is `<ip>[:<port = 53>][@<protocol = udp>]`
 		"google-tcp": "8.8.8.8:443@tcp",
-		"google-ipv6": "[2001:4860:4860::8888]"
+		"google-ipv6": "[2001:4860:4860::8888]",
+		"cloudflare-tls": "1.1.1.1@tls"
 	},
 	// extend rule parsers
 	// you can import some other parsers written by you or some other guy
