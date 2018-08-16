@@ -105,8 +105,17 @@ const loadConfig = (path) => {
 	for (let rule of rules) {
 		const { server } = rule;
 		if (server) {
-			if (typeof server === 'string' && servers[server]) {
-				rule.server = servers[server];
+			if (typeof server === 'string') {
+				if (servers[server]) {
+					rule.server = servers[server];
+				}
+				else if (!/^(?:[[\]0-9a-fA-F:]+|[0-9.]+)/.test(server)) {
+					console.log(`Server '${server}' is not found in server list, use the default server`);
+					rule.server = servers.default;
+				}
+				else {
+					rule.server = parseServer(server);
+				}
 			}
 			else {
 				rule.server = parseServer(server);
