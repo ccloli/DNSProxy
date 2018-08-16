@@ -253,6 +253,8 @@ class example {
         return false;
     }
 }
+
+module.exports = example;
 ```
 
 You can also use ES5- prototype to write your code:
@@ -269,6 +271,8 @@ example.prototype = {
         //TODO
     }
 };
+
+module.exports = example;
 ```
 
 After you finish the work, put the file to somewhere safe. Then add an array field `extend-parsers` to your config file if it doesn't have, and put the file path in it like this, save and reload to have a test!
@@ -281,6 +285,41 @@ After you finish the work, put the file to somewhere safe. Then add an array fie
     ],
     "rules": [
         { "file": "path/to/rule.txt", "type": "example", "server": { ... } }
+    ]
+}
+```
+
+If you make it a npm package, you can ask your user to `npm install -g` it, and add it to `extend-parsers` prefixing with `npm:`. Assume you made a package named `dnsproxy-foo-parser`, and you named the parser `foo` (`class foo {}`), user can use it like this:
+
+```js
+{
+    ...
+    "extend-parsers": [
+        "npm:dnsproxy-foo-parser"
+    ],
+    "rules": [
+        // both of these rules are using npm package `dnsproxy-foo-parser`
+        { "file": "path/to/bar.txt", "type": "npm:dnsproxy-foo-parser", "server": { ... } },
+        { "file": "path/to/baz.txt", "type": "foo", "server": { ... } }
+    ]
+}
+```
+
+If for some reason you want to rename your parsers when they're using in rules, you can suffix the path with vertical bar (`|`) and its new name. Assume you also made another parser in a local file, and its name is `foo`, too. You can use both of them like this:
+
+```js
+{
+    ...
+    "extend-parsers": [
+        "npm:dnsproxy-foo-parser|foo-npm",
+        "path/to/parser/foo.js|foo-local",
+    ],
+    "rules": [
+        // both of these rules are using npm package `dnsproxy-foo-parser`
+        { "file": "path/to/bar.txt", "type": "npm:dnsproxy-foo-parser", "server": { ... } },
+        { "file": "path/to/baz.txt", "type": "foo-npm", "server": { ... } },
+        // this rules are using local file `path/to/parser/foo.js`
+        { "file": "path/to/qux.txt", "type": "foo-local", "server": { ... } }
     ]
 }
 ```

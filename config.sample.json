@@ -60,7 +60,19 @@
 	// note if you're using Windows, use slash (/) or two backslashes (\\)
 	"extend-parsers": [
 		"path/to/parser.js",
-		"path\\to\\another\\parser.js"
+		"path\\to\\another\\parser.js",
+		// you can use vertical bar (|) after path to rename it, it's useful
+		// if you don't know its name or another parser uses the same name
+		// the original name of parser will be replaced by your new name
+		"path/to/renamed/parser.js|new-name",
+		// you can use `npm:` before path to import from a npm package
+		// you can use its original name to use the parser
+		// or use `npm:<package-name>` to use the parser
+		"npm:dnsproxy-npm-parser",
+		// you can also rename a npm package to overwrite its original name
+		// e.g. you can use either `npm:dnsproxy-npm-another-parser` or
+		// `another-parser` to use the parser
+		"npm:dnsproxy-npm-another-parser|another-parser"
 	],
 	// look up rules
 	// which rule defines first, which rule has a higher priority
@@ -100,5 +112,13 @@
 		// you can specify any rules with any name server
 		"file": "rules/advance.json",
 		"type": "advance"
+	}, {
+		// use the parser defined in `extend-parser`
+		"file": "rules/foo.txt",
+		"type": "new-name"
+	}, {
+		// use the npm package defined in `extend-parser`
+		"file": "rules/bar.txt",
+		"type": "npm:dnsproxy-npm-another-parser"
 	}]
 }
