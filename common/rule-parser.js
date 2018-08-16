@@ -17,22 +17,40 @@ class RuleParser {
 		const parser = {};
 
 		let defaultPath = fs.readdirSync(dir).filter(e => /\.js$/.test(e));
-		defaultPath = defaultPath.map(e => path.resolve(dir, e));
-		extendPath = extendPath.map(e => path.resolve(path.dirname(configPath), e));
+		defaultPath = defaultPath.map(e => ({
+			type: 'file',
+			path: path.resolve(dir, e)
+		}));
+		extendPath = extendPath.map(e => {
+			let [ file, name ] = e.trim().split(/\s*\|\s*/) || [];
+			let type = 'file';
+			const item = file.split(/\s*:\s*/);
+			if (item.length > 1) {
+				[type, file ] = item;
+			}
+			return { type, name, path: path.resolve(path.dirname(configPath), file) };
+		});
 
-		[...defaultPath, ...extendPath].forEach(item => {
+		[...defaultPath, ...extendPath].forEach(({ type, path, name }) => {
 			try {
-				const cur = require(item);
-				if (!cur.name) {
-					throw new SyntaxError(`Parser file '${item}' does't specify its name`);
+				const cur = require(path);
+				name = name || cur.name;
+				if (!name && type !== 'npm') {
+					throw new SyntaxError(`Parser file '${path}' does't specify its name`);
 				}
 				if (!cur.prototype.parse || !cur.prototype.test) {
 					throw new SyntaxError(`Parser ${cur.name} doesn't provide parse() or test() method`);
 				}
-				parser[cur.name] = cur;
+
+				if (name) {
+					parser[name] = cur;
+				}
+				if (type === 'npm') {
+					parser[`npm:${path}`] = cur;
+				}
 			}
 			catch (err) {
-				console.log(`Fail to import parser file '${item}'`);
+				console.log(`Fail to import parser file '${path}'`);
 				console.log(err);
 			}
 		});
