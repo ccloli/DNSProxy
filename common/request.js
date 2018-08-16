@@ -37,7 +37,7 @@ const udpLookup = (msg, port, address, timeout) => {
 				timer = null;
 				if (!closed) {
 					client.close();
-					reject(new Error('No data response'));
+					reject(new Error('Request timed out'));
 				}
 			}, timeout);
 		}
@@ -91,7 +91,7 @@ const tcpLookup = (msg, port, address, timeout) => {
 				timer = null;
 				if (!closed) {
 					client.end();
-					reject(new Error('No data response'));
+					reject(new Error('Request timed out'));
 				}
 			}, timeout);
 		}
@@ -197,7 +197,7 @@ const tlsLookup = (msg, port, address, timeout) => {
 				timer = null;
 				if (!closed) {
 					client.end();
-					reject(new Error('No data response'));
+					reject(new Error('Request timed out'));
 				}
 			}, timeout);
 		}

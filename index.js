@@ -83,7 +83,7 @@ const setupUDPServer = (host, port, timeout, rules) => {
 		if (isIPv6(address)) {
 			address = `[${address}]`;
 		}
-		console.log(`[UDP] server listening ${address}:${port}`);
+		console.log(`[UDP] Server listening ${address}:${port}`);
 	});
 
 	udpServer.bind(port, host);
@@ -175,7 +175,7 @@ const setupTCPServer = (host, port, timeout, rules) => {
 		if (isIPv6(address)) {
 			address = `[${address}]`;
 		}
-		console.log(`[TCP] server listening ${address}:${port}`);
+		console.log(`[TCP] Server listening ${address}:${port}`);
 	});
 
 	tcpServer.listen(port, host);
