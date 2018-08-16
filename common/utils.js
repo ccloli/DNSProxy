@@ -1,3 +1,4 @@
+let localIPs = null;
 
 const parseServer = (input) => {
 	const init = {
@@ -68,6 +69,89 @@ const isIPv6 = (ip) => {
 	return ip.indexOf(':') !== ip.lastIndexOf(':');
 };
 
+const trimIPv6Bracket = (ip) => {
+	return ip.replace(/[[\]]/g, '');
+};
+
+const addIPv6Bracket = (ip) => {
+	return `[${trimIPv6Bracket(ip)}]`;
+};
+
+const isWildcardIP = (ip) => {
+	if (isIPv6(ip)) {
+		ip = trimIPv6Bracket(ip);
+		return /^[0:]+$/.test(ip);
+	}
+	return /^(0+\.){3}0+$/.test(ip);
+};
+
+const getLocalIPs = (force) => {
+	if (localIPs && localIPs.length && !force) {
+		return localIPs;
+	}
+	const ifs = require('os').networkInterfaces();
+	localIPs = [];
+	Object.keys(ifs).forEach(ifname => {
+		ifs[ifname].forEach(item => localIPs.push(item.address));
+	});
+	return localIPs;
+};
+
+const mapIPv4ToIPv6 = (ip) => {
+	const [a, b, c, d] = ip.split('.');
+	return [
+		'::ffff:' + ip,
+		'::ffff:' + [a << 8 + b << 0, c << 8 + d << 0].map(e => e.toString(16)).join(':')
+	];
+};
+
+const getSameIPPattern = (ip, v4tov6 = true) => {
+	if (isIPv6(ip)) {
+		ip = trimIPv6Bracket(ip);
+		if (ip.indexOf('.') >= 0) {
+			const [v6, v4] = ip.match(/^([0-9a-fA-F:]+):((?:[0-9]+\.){3}[0-9]+)$/);
+			return getSameIPPattern(v6) + ':' + getSameIPPattern(v4, false);
+		}
+		return '0*' + ip.replace(/(?:^0+|:0*)+:/g, ':[0:]*:').replace(/(?:^|:)0*([0-9a-fA-F])(:|$)/g, ':0*$1$2').replace(/:$/, ':0*');
+	}
+	const v4Pattern = ip.replace(/\\./g, '\\.').replace(/(^|\.)0*(\d+)/g, '$10*$2');
+	if (!v4tov6) {
+		const v6Pattern = mapIPv4ToIPv6(ip).map(e => getSameIPPattern(e));
+		return [v4Pattern, ...v6Pattern].concat('|');
+	}
+	return v4Pattern;
+};
+
+const isLocalIP = (fn => {
+	const ips = getLocalIPs();
+	const patterns = ips.map(e => getSameIPPattern(e));
+	// 127.0.0.0/8 are loopback IPs, but if we bind IP to 0.0.0.0 or [::],
+	// only 127.0.0.1 and ::1 will accept the real request
+	// to test loopback IP, use `isLookbackIP()`
+	const regexp = RegExp(`^(?:${ patterns.join('|') })$`, 'i');
+	return fn.bind(this, regexp);
+})((pattern, ip) => {
+	ip = trimIPv6Bracket(ip);
+	return pattern.test(ip);
+});
+
+const isLookbackIP = (ip) => {
+	if (isIPv6(ip)) {
+		ip = trimIPv6Bracket(ip);
+		// ::ffff:127.*.*.* | ::ffff:7f??:* | 0:0:0:0:0:ffff:127.*.*.* | 0:0:0:0:0:ffff:7f??:: | 0:0:0:0:0:ffff:7f??:*
+		return /^0*:[0:*]:ffff:(?:127(\.)|7f[0-9a-fA-F]{2}:[0-9a-fA-F]{1,4}$)|(0+:){5}:ffff:(?:127\.|7f[0-9a-fA-F]{2})/i.test(ip);
+	}
+	return /^127/.test(ip);
+};
+
+const isSameIP = (a, b) => {
+	if (!isIPv6(b)) {
+		// force replace `b` to IPv6, as pattern of `a` supports both v4 and v6
+		b = mapIPv4ToIPv6(b)[0];
+	}
+	return RegExp(getSameIPPattern(a)).test(b);
+};
+
 const reverseFill = (data) => {
 	const list = Object.keys(data);
 	list.forEach(key => {
@@ -78,6 +162,15 @@ const reverseFill = (data) => {
 
 module.exports = {
 	isIPv6,
+	isWildcardIP,
+	getLocalIPs,
+	mapIPv4ToIPv6,
+	getSameIPPattern,
+	isLocalIP,
+	isLookbackIP,
+	isSameIP,
+	trimIPv6Bracket,
+	addIPv6Bracket,
 	parseServer,
 	sumBuffer,
 	reverseFill

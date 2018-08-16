@@ -4,7 +4,7 @@ const path = require('path');
 const { udpLookup, tcpLookup, tlsLookup } = require('./common/request');
 const { udpPacketToTcpPacket, tcpPacketToUdpPacket } = require('./common/convert');
 const { parseTCPPacket, parseUDPPacket } = require('./common/packet-parser');
-const { isIPv6 } = require('./common/utils');
+const { isIPv6, isWildcardIP, isLookbackIP, isLocalIP, isSameIP } = require('./common/utils');
 const loadConfig = require('./common/load-config');
 const RuleParser = require('./common/rule-parser');
 const { DNSTYPE } = require('./common/consts');
@@ -66,6 +66,17 @@ const setupUDPServer = (host, port, timeout, rules) => {
 		// so as for now, we can assume all the packets will have only one question
 		const resolve = rules.resolve(packet.Question[0].Name);
 		const { server, index } = resolve;
+
+		if (
+			server.port === port && (isWildcardIP(host) ? 
+				isLocalIP(server.host) || isLookbackIP(server.host) : 
+				isSameIP(host, server.host)
+			)
+		) {
+			// forward to proxy server itself!
+			console.log(`[UDP] Query [${packet.Question[0].Name}] forward to proxy server itself`);
+			return;
+		}
 		packet.Question.forEach(question => {
 			console.log(`[UDP] Query [${question.Name}](${DNSTYPE[question.Type]}) --> ${
 				server.host}:${server.port}@${server.type} ${index < 0 ? '' : `(#${index + 1})`}`);
@@ -150,6 +161,18 @@ const setupTCPServer = (host, port, timeout, rules) => {
 				// thought most of requests has only one question
 				const resolve = rules.resolve(packet.Question[0].Name);
 				const { server, index } = resolve;
+				
+				if (
+					server.port === port && (isWildcardIP(host) ? 
+						isLocalIP(server.host) || isLookbackIP(server.host) : 
+						isSameIP(host, server.host)
+					)
+				) {
+					// forward to proxy server itself!
+					console.log(`[TCP] Query [${packet.Question[0].Name}] forward to proxy server itself`);
+					socket.end();
+					return;
+				}
 				packet.Question.forEach(question => {
 					console.log(`[TCP] Query [${question.Name}](${DNSTYPE[question.Type]}) --> ${
 						server.host}:${server.port}@${server.type} ${index < 0 ? '' : `(#${index + 1})`}`);
