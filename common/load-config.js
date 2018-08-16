@@ -90,6 +90,12 @@ const loadConfig = (path) => {
 		}
 		result[key] = Object.assign({}, defaultConfig[key], result[key]);
 	});
+	// format config
+	const { settings } = result;
+	settings.tcp = !!settings.tcp;
+	settings.udp = !!settings.udp;
+	settings.port = +settings.port;
+	settings.timeout = +settings.timeout;
 
 	// parse servers
 	const { servers, rules } = result;
