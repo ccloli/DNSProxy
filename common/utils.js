@@ -109,7 +109,7 @@ const mapIPv4ToIPv6 = (ip) => {
 	const [a, b, c, d] = ip.split('.');
 	return [
 		'::ffff:' + ip,
-		'::ffff:' + [a << 8 + b << 0, c << 8 + d << 0].map(e => e.toString(16)).join(':')
+		'::ffff:' + [(a << 8) + (+b), (c << 8) + (+d)].map(e => ('0000' + e.toString(16)).substr(-4)).join(':')
 	];
 };
 
@@ -117,15 +117,15 @@ const getSameIPPattern = (ip, v4tov6 = true) => {
 	if (isIPv6(ip)) {
 		ip = trimIPv6Bracket(ip);
 		if (ip.indexOf('.') >= 0) {
-			const [v6, v4] = ip.match(/^([0-9a-fA-F:]+):((?:[0-9]+\.){3}[0-9]+)$/);
+			const [, v6, v4] = ip.match(/^([0-9a-fA-F:]+):((?:[0-9]+\.){3}[0-9]+)$/);
 			return getSameIPPattern(v6) + ':' + getSameIPPattern(v4, false);
 		}
-		return '0*' + ip.replace(/(?:^0+|:0*)+:/g, ':[0:]*:').replace(/(?:^|:)0*([0-9a-fA-F])(:|$)/g, ':0*$1$2').replace(/:$/, ':0*');
+		return ip.replace(/(^|:)0*(?::0*)*(?=:)/g, '$1[0:]*').replace(/(^|:)0*([0-9a-fA-F]{1,3})(?=:|$|\()/g, '$10*$2').replace(/:$/, ':0*');
 	}
-	const v4Pattern = ip.replace(/\\./g, '\\.').replace(/(^|\.)0*(\d+)/g, '$10*$2');
-	if (!v4tov6) {
+	const v4Pattern = ip.replace(/(^|\.)0*(\d{1,2})(?=\.|$)/g, '$10*$2').replace(/\./g, '\\.');
+	if (v4tov6) {
 		const v6Pattern = mapIPv4ToIPv6(ip).map(e => getSameIPPattern(e));
-		return [v4Pattern, ...v6Pattern].concat('|');
+		return [v4Pattern, ...v6Pattern].join('|');
 	}
 	return v4Pattern;
 };
@@ -139,6 +139,7 @@ const isLocalIP = (fn => {
 	const regexp = RegExp(`^(?:${ patterns.join('|') })$`, 'i');
 	return fn.bind(this, regexp);
 })((pattern, ip) => {
+	console.log(pattern);
 	ip = trimIPv6Bracket(ip);
 	return pattern.test(ip);
 });
