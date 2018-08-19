@@ -27,7 +27,12 @@ DNSProxy is a simple DNS proxy server, which helps you to forward DNS requests f
 
 ### Requirement
 
-This work is developed with Node.js v8.6.0, so it should work on Node.js v8+.
+- Node.js
+    * v8.x: `v8.10.0`<sup>*</sup> or higher
+    * v9.x: `v9.1.0`<sup>*</sup> or higher
+    * v10.x or higher
+
+<sup>*</sup> All Node.js releases before `v8.10.0` and Node.js `v9.0.0` have a critical bug that cannot compare IPv6 address with TLS certificates `IP Address` field correctly (see [nodejs/node#14736](https://github.com/nodejs/node/issues/14736)). If you get an error says _`Hostname/IP doesn't match certificate's altnames`_ and the certificate looks safe, please upgrade your Node.js to `v8.10.0`/`v9.1.0` or higher, or write the IPv6 address without shorten and pending zero, e.g. use `2606:4700:4700:0:0:0:0:1111` instead of `2606:4700:4700::1111` or `2606:4700:4700:0000:0000:0000:0000:1111`. If you don't need DNS-over-TLS, use any version of v8.x or higher should be fine.
 
 ### Clone from GitHub
 
