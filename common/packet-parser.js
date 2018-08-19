@@ -55,9 +55,9 @@ const parseLookupName = (data, offset) => {
 		// | 1  1|                OFFSET                   |
 		// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 		if (length >> 6 === 3) {
-			const targetOffset = sumBuffer(pieces.split(0, 2)) & 0x3fff;
+			const targetOffset = sumBuffer(pieces.slice(0, 2)) & 0x3fff;
 			lastIndex += 2;
-			return parse(data, targetOffset);
+			return parseLookupName(data, targetOffset).data;
 		}
 
 		lastIndex += 1 + length;
