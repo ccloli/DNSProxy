@@ -149,6 +149,7 @@ const parsePacket = (data, tcp) => {
 	const packet = {};
 	const offset = {};
 	packet.__offset = offset;
+	let packetOffset = 0;
 	let nextOffset = 0;
 
 	// TCP DNS Packet structure
@@ -161,7 +162,8 @@ const parsePacket = (data, tcp) => {
 	if (tcp) {
 		offset.Length = 0;
 		packet.Length = sumBuffer(data.slice(0, 2));
-		nextOffset = 2;
+		packetOffset = 2;
+		data = data.slice(2);
 	}
 
 	// UDP DNS Packet structure
@@ -176,31 +178,31 @@ const parsePacket = (data, tcp) => {
 	// +----------------+
 	// |   Additional   |
 	// +----------------+
-	offset.Header = nextOffset;
+	offset.Header = nextOffset + packetOffset;
 	packet.Header = parseHeader(data.slice(nextOffset, nextOffset + 12));
 	nextOffset += 12;
 
 	const { QDCount, ANCount, NSCount, ARCount } = packet.Header;
 	if (QDCount >= 0) {
-		offset.Question = nextOffset;
+		offset.Question = nextOffset + packetOffset;
 		const { data: res, byteLength } = parseQuestion(data, QDCount, nextOffset);
 		nextOffset += byteLength;
 		packet.Question = res;
 	}
 	if (ANCount >= 0) {
-		offset.Answer = nextOffset;
+		offset.Answer = nextOffset + packetOffset;
 		const { data: res, byteLength } = parseAnswer(data, ANCount, nextOffset);
 		nextOffset += byteLength;
 		packet.Answer = res;
 	}
 	if (NSCount >= 0) {
-		offset.Authority = nextOffset;
+		offset.Authority = nextOffset + packetOffset;
 		const { data: res, byteLength } = parseAuthority(data, NSCount, nextOffset);
 		nextOffset += byteLength;
 		packet.Authority = res;
 	}
 	if (ARCount >= 0) {
-		offset.Additional = nextOffset;
+		offset.Additional = nextOffset + packetOffset;
 		const { data: res, byteLength } = parseAdditional(data, ARCount, nextOffset);
 		nextOffset += byteLength;
 		packet.Additional = res;
