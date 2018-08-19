@@ -64,6 +64,14 @@ const sumBuffer = (buffer) => {
 	}, 0);
 };
 
+const reverseFill = (data) => {
+	const list = Object.keys(data);
+	list.forEach(key => {
+		data[data[key]] = key;
+	});
+	return data;
+};
+
 const isIPv6 = (ip) => {
 	// an IPv6 address has at least two :
 	return ip.indexOf(':') !== ip.lastIndexOf(':');
@@ -152,12 +160,65 @@ const isSameIP = (a, b) => {
 	return RegExp(getSameIPPattern(a)).test(b);
 };
 
-const reverseFill = (data) => {
-	const list = Object.keys(data);
-	list.forEach(key => {
-		data[data[key]] = key;
-	});
-	return data;
+const bufferToIP = (buffer, compress = true) => {
+	if (buffer.length === 4) {
+		return Array.from(buffer).join('.');
+	}
+	else {
+		let res = '';
+		for (let i = 0, len = buffer.length; i < len; i += 2) {
+			res += (i ? ':' : '') + ((buffer[i] << 8) + (buffer[i + 1])).toString(16);
+		}
+		if (compress) {
+			// find the longest full-zero token and replace it to '::'
+			const regexp = /(?:^|:)[0:]+:(?:0+$)?/g;
+			const match = res.match(regexp);
+			if (match) {
+				let longest = 0;
+				let index = 0;
+				match.forEach((e, i) => {
+					if (e.length > longest) {
+						longest = e.length;
+						index = i;
+					}
+				});
+				res = res.replace(regexp, pattern => {
+					if (!index) {
+						pattern = '::';
+					}
+					index--;
+					return pattern;
+				});
+			}
+			return res;
+		}
+		return res;
+	}
+};
+
+const ipToBuffer = (ip) => {
+	if (isIPv6(ip)) {
+		const [leftPattern, rightPattern] = ip.split(/(?:^)?::(?:$)?/);
+		const leftTokens = (leftPattern || '0').split(':');
+		const rightTokens = (rightPattern || '0').split(':');
+		const leftLen = leftTokens.length;
+		const rightLen = rightTokens.length;
+
+		let tokens;
+		// if leftLen is 8, then the IP is not compressed,
+		// we can ignore the rightTokens created by ourselves
+		if (leftLen === 8) {
+			tokens = leftTokens;
+		}
+		else {
+			tokens = leftTokens.concat('0'.repeat(8 - leftLen - rightLen).split(''), rightTokens);
+		}
+
+		return Buffer.from(tokens.map(e => ('0000' + e).substr(-4)).join(''), 'hex');
+	}
+	else {
+		return Buffer.from(ip.split('.').map(e => +e));
+	}
 };
 
 module.exports = {
@@ -173,5 +234,7 @@ module.exports = {
 	addIPv6Bracket,
 	parseServer,
 	sumBuffer,
-	reverseFill
+	reverseFill,
+	bufferToIP,
+	ipToBuffer
 };
