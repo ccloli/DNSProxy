@@ -109,7 +109,8 @@ const loadConfig = (path) => {
 				if (servers[server]) {
 					rule.server = servers[server];
 				}
-				else if (!/^(?:[[\]0-9a-fA-F:]+|[0-9.]+)/.test(server)) {
+				// *.*.*.* | *.*.*.*:* | [(*:){2,7}*] | [(*:){2,7}*]:* | (*:){2,7}* | *@*
+				else if (!/^(?:(?:(?:\d+\.){3}\d+|\[(?:[0-9a-fA-F]*:){2,7}[0-9a-fA-F]*\])(?::\d+)?|(?:[0-9a-fA-F]*:){2,7}[0-9a-fA-F]*)(?:@\w+)?$/.test(server)) {
 					console.log(`Server '${server}' is not found in server list, use the default server`);
 					rule.server = servers.default;
 				}
