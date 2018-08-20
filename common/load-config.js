@@ -109,13 +109,13 @@ const loadConfig = (path) => {
 				if (servers[server]) {
 					rule.server = servers[server];
 				}
-				// *.*.*.* | *.*.*.*:* | [(*:){2,7}*] | [(*:){2,7}*]:* | (*:){2,7}* | *@*
-				else if (!/^(?:(?:(?:\d+\.){3}\d+|\[(?:[0-9a-fA-F]*:){2,7}[0-9a-fA-F]*\])(?::\d+)?|(?:[0-9a-fA-F]*:){2,7}[0-9a-fA-F]*)(?:@\w+)?$/.test(server)) {
-					console.log(`Server '${server}' is not found in server list, use the default server`);
-					rule.server = servers.default;
+				// *.*.*.* | [(*:){2,7}*] | [(*:){2,6}*.*.*.*] | *:* | (*:){2,7}* | (*:){2,6}*.*.*.* | *@*
+				else if (/^(?:(?:(?:\d+\.){3}\d+|\[(?:[0-9a-fA-F]*:){2,7}[0-9a-fA-F]*\]|\[(?:[0-9a-fA-F]*:){2,6}(?:\d+\.){3}\d+)(?::\d+)?|(?:[0-9a-fA-F]*:){2,7}[0-9a-fA-F]*|\[(?:[0-9a-fA-F]*:){2,6}(?:\d+\.){3}\d+)(?:@\w+)?$/.test(server)) {
+					rule.server = parseServer(server);
 				}
 				else {
-					rule.server = parseServer(server);
+					console.log(`Server '${server}' is not found in server list, use the default server`);
+					rule.server = servers.default;
 				}
 			}
 			else {
