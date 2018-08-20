@@ -97,6 +97,11 @@ const setupUDPServer = (host, port, timeout, rules) => {
 		console.log(`[UDP] Server listening ${address}:${port}`);
 	});
 
+	udpServer.on('close', () => {
+		console.log('[UDP] Server closed!');
+		udpServer.removeAllListeners();
+	});
+
 	udpServer.bind(port, host);
 	return udpServer;
 };
@@ -191,6 +196,9 @@ const setupTCPServer = (host, port, timeout, rules) => {
 			console.log(err);
 			received = null;
 		});
+		socket.on('close', () => {
+			socket.removeAllListeners();
+		});
 	});
 
 	tcpServer.on('listening', () => {
@@ -199,6 +207,11 @@ const setupTCPServer = (host, port, timeout, rules) => {
 			address = `[${address}]`;
 		}
 		console.log(`[TCP] Server listening ${address}:${port}`);
+	});
+
+	tcpServer.on('close', () => {
+		console.log('[TCP] Server closed!');
+		tcpServer.removeAllListeners();
 	});
 
 	tcpServer.listen(port, host);

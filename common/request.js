@@ -16,6 +16,7 @@ const udpLookup = (msg, port, address, timeout) => {
 		});
 		client.on('close', () => {
 			closed = true;
+			client.removeAllListeners();
 			if (timer) {
 				clearTimeout(timer);
 				timer = null;
@@ -23,11 +24,13 @@ const udpLookup = (msg, port, address, timeout) => {
 		});
 		client.on('error', (err) => {
 			msg = null;
+			client.removeAllListeners();
 			reject(err);
 		});
 		client.send(msg, port, address, err => {
 			msg = null;
 			if (err) {
+				client.removeAllListeners();
 				reject(err);
 			}
 		});
@@ -55,10 +58,12 @@ const tcpLookup = (msg, port, address, timeout) => {
 			if (err) {
 				msg = null;
 				reject(err);
+				client.removeAllListeners();
 			}
 		});
 		client.on('close', () => {
 			closed = true;
+			client.removeAllListeners();
 			if (timer) {
 				clearTimeout(timer);
 				timer = null;
@@ -81,6 +86,7 @@ const tcpLookup = (msg, port, address, timeout) => {
 		});
 		client.on('error', (err) => {
 			msg = null;
+			client.removeAllListeners();
 			reject(err);
 		});
 		client.write(msg);
@@ -109,10 +115,12 @@ const tlsLookup = (msg, port, address, timeout) => {
 			if (err) {
 				msg = null;
 				reject(err);
+				client.removeAllListeners();
 			}
 		});
 		client.on('close', () => {
 			closed = true;
+			client.removeAllListeners();
 			if (timer) {
 				clearTimeout(timer);
 				timer = null;
@@ -187,6 +195,7 @@ const tlsLookup = (msg, port, address, timeout) => {
 		});
 		client.on('error', (err) => {
 			msg = null;
+			client.removeAllListeners();
 			reject(err);
 		});
 		client.write(msg);
