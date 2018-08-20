@@ -85,6 +85,85 @@ const addIPv6Bracket = (ip) => {
 	return `[${trimIPv6Bracket(ip)}]`;
 };
 
+const formatIP = (ip, compress = true) => {
+	if (isIPv6(ip)) {
+		ip = trimIPv6Bracket(ip).toLowerCase();
+		if (ip.indexOf('.') >= 0) {
+			// the IPv6 address has IPv4 part, e.g. abcd::1.2.3.4 == abcd::102:304
+			// split v6 part and v4 part
+			const [, v6, v4] = ip.match(/^([0-9a-f:]+):((?:[0-9]+\.){3}[0-9]+)$/);
+			const [a, b, c, d] = v4.split('.');
+			ip = [v6, (a << 8) + (+b), (c << 8) + (+d)].map(e => e.toString(16)).join(':');
+		}
+		// remove leading zero of each part
+		ip = ip.replace(/(^|:)0*([0-9a-f]+)(?=$|:)/g, '$1$2');
+		if (compress) {
+			if (/(^|:)0(?=$|:)/.test(ip)) {
+				// the IP can be compressed
+				// decompress first, so that we can find the best part to shorten and standard the result
+				return compressIPv6(decompressIPv6(ip));
+			}
+			// the IP cannot be compressed, or has already been compressed and no other part can be compressed
+			return ip;
+		}
+		else {
+			return decompressIPv6(ip);
+		}
+	}
+	else {
+		// remove IPv4 leading zero of each part
+		return ip.replace(/(^|\.)0*(\d+)(?=$|\.)/g, '$1$2');
+	}
+};
+
+const compressIPv6 = (ip) => {
+	if (ip.indexOf('::') >= 0) {
+		return ip;
+	}
+	// find the longest full-zero token and replace it to '::'
+	const regexp = /(?:^|:)[0:]+:(?:0+$)?/g;
+	const match = ip.match(regexp);
+	if (match) {
+		let longest = 0;
+		let index = 0;
+		match.forEach((e, i) => {
+			if (e.length > longest) {
+				longest = e.length;
+				index = i;
+			}
+		});
+		ip = ip.replace(regexp, pattern => {
+			if (!index) {
+				pattern = '::';
+			}
+			index--;
+			return pattern;
+		});
+	}
+	return ip;
+};
+
+const decompressIPv6 = (ip) => {
+	if (ip.indexOf('::') < 0) {
+		return ip;
+	}
+	const [leftPattern, rightPattern] = ip.split(/(?:^)?::(?:$)?/);
+	const [leftTokens, rightTokens] = [leftPattern, rightPattern].map(e => (e || '0').split(':'));
+	const [leftLen, rightLen] = [leftTokens, rightTokens].map(e => e.length);
+
+	let tokens;
+	// if leftLen is 8, then the IP is not compressed,
+	// we can ignore the rightTokens created by ourselves
+	if (leftLen === 8) {
+		tokens = leftTokens;
+	}
+	else {
+		// fill the shorten parts
+		tokens = leftTokens.concat('0'.repeat(8 - leftLen - rightLen).split(''), rightTokens);
+	}
+	return tokens.join(':');
+};
+
 const isWildcardIP = (ip) => {
 	if (isIPv6(ip)) {
 		ip = trimIPv6Bracket(ip);
@@ -106,41 +185,27 @@ const getLocalIPs = (force) => {
 };
 
 const mapIPv4ToIPv6 = (ip) => {
-	const [a, b, c, d] = ip.split('.');
-	return [
-		'::ffff:' + ip,
-		'::ffff:' + [(a << 8) + (+b), (c << 8) + (+d)].map(e => ('0000' + e.toString(16)).substr(-4)).join(':')
-	];
-};
-
-const getSameIPPattern = (ip, v4tov6 = true) => {
-	if (isIPv6(ip)) {
-		ip = trimIPv6Bracket(ip);
-		if (ip.indexOf('.') >= 0) {
-			const [, v6, v4] = ip.match(/^([0-9a-fA-F:]+):((?:[0-9]+\.){3}[0-9]+)$/);
-			return getSameIPPattern(v6) + ':' + getSameIPPattern(v4, false);
-		}
-		return ip.replace(/(^|:)0*(?::0*)*(?=:)/g, '$1[0:]*').replace(/(^|:)0*([0-9a-fA-F]{1,3})(?=:|$|\()/g, '$10*$2').replace(/:$/, ':0*');
-	}
-	const v4Pattern = ip.replace(/(^|\.)0*(\d{1,2})(?=\.|$)/g, '$10*$2').replace(/\./g, '\\.');
-	if (v4tov6) {
-		const v6Pattern = mapIPv4ToIPv6(ip).map(e => getSameIPPattern(e));
-		return [v4Pattern, ...v6Pattern].join('|');
-	}
-	return v4Pattern;
+	return formatIP('::ffff:' + ip);
 };
 
 const isLocalIP = (fn => {
 	const ips = getLocalIPs();
-	const patterns = ips.map(e => getSameIPPattern(e));
+	const patterns = [];
+	ips.forEach(e => {
+		if (isIPv6(e)) {
+			patterns.push(formatIP(e));
+		}
+		else {
+			patterns.push(formatIP(e).replace(/\./g, '\\.'), formatIP(mapIPv4ToIPv6(e)));
+		}
+	});
 	// 127.0.0.0/8 are loopback IPs, but if we bind IP to 0.0.0.0 or [::],
 	// only 127.0.0.1 and ::1 will accept the real request
 	// to test loopback IP, use `isLookbackIP()`
 	const regexp = RegExp(`^(?:${ patterns.join('|') })$`, 'i');
 	return fn.bind(this, regexp);
 })((pattern, ip) => {
-	console.log(pattern);
-	ip = trimIPv6Bracket(ip);
+	ip = formatIP(ip);
 	return pattern.test(ip);
 });
 
@@ -148,50 +213,27 @@ const isLookbackIP = (ip) => {
 	if (isIPv6(ip)) {
 		ip = trimIPv6Bracket(ip);
 		// ::ffff:127.*.*.* | ::ffff:7f??:* | 0:0:0:0:0:ffff:127.*.*.* | 0:0:0:0:0:ffff:7f??:: | 0:0:0:0:0:ffff:7f??:*
-		return /^0*:[0:*]:ffff:(?:127(\.)|7f[0-9a-fA-F]{2}:[0-9a-fA-F]{1,4}$)|(0+:){5}:ffff:(?:127\.|7f[0-9a-fA-F]{2})/i.test(ip);
+		return /^0*:[0:*]:ffff:(?:127\.|7f[0-9a-fA-F]{2}:[0-9a-fA-F]{1,4}$)|(0+:){5}:ffff:(?:127\.|7f[0-9a-fA-F]{2})/i.test(ip);
 	}
 	return /^127/.test(ip);
 };
 
 const isSameIP = (a, b) => {
-	if (!isIPv6(b)) {
-		// force replace `b` to IPv6, as pattern of `a` supports both v4 and v6
-		b = mapIPv4ToIPv6(b)[0];
-	}
-	return RegExp(getSameIPPattern(a)).test(b);
+	[a, b] = [a, b].map(e => formatIP(e));
+	return a === b || (!isIPv6(a) && mapIPv4ToIPv6(a) === b);
 };
 
 const bufferToIP = (buffer, compress = true) => {
-	if (buffer.length === 4) {
+	if (buffer.length === 4) { // IPv4
 		return Array.from(buffer).join('.');
 	}
-	else {
+	else { // IPv6
 		let res = '';
 		for (let i = 0, len = buffer.length; i < len; i += 2) {
 			res += (i ? ':' : '') + ((buffer[i] << 8) + (buffer[i + 1])).toString(16);
 		}
 		if (compress) {
-			// find the longest full-zero token and replace it to '::'
-			const regexp = /(?:^|:)[0:]+:(?:0+$)?/g;
-			const match = res.match(regexp);
-			if (match) {
-				let longest = 0;
-				let index = 0;
-				match.forEach((e, i) => {
-					if (e.length > longest) {
-						longest = e.length;
-						index = i;
-					}
-				});
-				res = res.replace(regexp, pattern => {
-					if (!index) {
-						pattern = '::';
-					}
-					index--;
-					return pattern;
-				});
-			}
-			return res;
+			res = compressIPv6(res);
 		}
 		return res;
 	}
@@ -199,23 +241,8 @@ const bufferToIP = (buffer, compress = true) => {
 
 const ipToBuffer = (ip) => {
 	if (isIPv6(ip)) {
-		const [leftPattern, rightPattern] = ip.split(/(?:^)?::(?:$)?/);
-		const leftTokens = (leftPattern || '0').split(':');
-		const rightTokens = (rightPattern || '0').split(':');
-		const leftLen = leftTokens.length;
-		const rightLen = rightTokens.length;
-
-		let tokens;
-		// if leftLen is 8, then the IP is not compressed,
-		// we can ignore the rightTokens created by ourselves
-		if (leftLen === 8) {
-			tokens = leftTokens;
-		}
-		else {
-			tokens = leftTokens.concat('0'.repeat(8 - leftLen - rightLen).split(''), rightTokens);
-		}
-
-		return Buffer.from(tokens.map(e => ('0000' + e).substr(-4)).join(''), 'hex');
+		ip = decompressIPv6(ip);
+		return Buffer.from(ip.split(':').map(e => ('0000' + e).substr(-4)).join(''), 'hex');
 	}
 	else {
 		return Buffer.from(ip.split('.').map(e => +e));
@@ -227,7 +254,6 @@ module.exports = {
 	isWildcardIP,
 	getLocalIPs,
 	mapIPv4ToIPv6,
-	getSameIPPattern,
 	isLocalIP,
 	isLookbackIP,
 	isSameIP,
@@ -237,5 +263,8 @@ module.exports = {
 	sumBuffer,
 	reverseFill,
 	bufferToIP,
-	ipToBuffer
+	ipToBuffer,
+	formatIP,
+	compressIPv6,
+	decompressIPv6
 };
