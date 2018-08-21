@@ -4,13 +4,14 @@
  * @class list
  */
 class list {
-	constructor(data) {
+	constructor(config) {
 		this.pattern = [];
 		this.include = [];
 		this.exclude = [];
+		this.server = null;
 
-		if (data) {
-			this.parse(data);
+		if (config) {
+			this.init(config);
 		}
 	}
 
@@ -54,13 +55,35 @@ class list {
 	}
 
 	/**
+	 * Init parser
+	 * 
+	 * Check if the file is exist, if not exist, throw an error,
+	 * else, save server and call this.parse() to parse file
+	 * 
+	 * @param {object} config - the config object needed to init
+	 * @param {string} config.file - the rules to be parsed
+	 * @param {object} config.server - the server to return if a domain matches
+	 * @memberof list
+	 */
+	init({ file, server }) {
+		if (!file) {
+			throw new Error('Field \'file\' is required for list parser');
+		}
+		if (!server) {
+			throw new Error('Field \'server\' is required for list parser');
+		}
+		this.server = server;
+		this.parse(file);
+	}
+
+	/**
 	 * Parse input data, save parsed patterns to this.patterns
 	 * 
 	 * Put include and exclude indexes to this.include and this.exclude,
 	 * so that when searching one rule type, the other one will not in queue,
 	 * so that we can skip most the unwanted data
 	 * 
-	 * @public 
+	 * @private
 	 * @param {string} data - the data needs to parse
 	 * @memberof list
 	 */
@@ -171,11 +194,13 @@ class list {
 	 * 
 	 * @public 
 	 * @param {string} host - the domain name needs to be checked
-	 * @returns {boolean} the host matches the rules or not
+	 * @returns {object|null} if the domain name matches, return { server }, or return null
 	 * @memberof list
 	 */
 	test(host) {
-		return this.crossTest(host);
+		return this.crossTest(host) ? {
+			server: this.server
+		} : null;
 	}
 }
 

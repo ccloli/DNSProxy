@@ -43,6 +43,23 @@ class RuleParser {
 					throw new SyntaxError(`Parser ${cur.name} doesn't provide parse() or test() method`);
 				}
 
+				cur.fieldType = cur.fieldType || {
+					file: 'file',
+					server: 'server'
+				};
+				cur.fields = {
+					file: [],
+					server: []
+				};
+				for (let i in cur.fieldType) {
+					const key = cur.fieldType[i];
+					if (!cur.fields[key]) {
+						console.log(`Field type of '${i}' in parser ${cur.name} is '${key}', which is invalid`);
+						continue;
+					}
+					cur.fields[key].push(i);
+				}
+
 				if (name) {
 					parser[name] = cur;
 				}
@@ -59,60 +76,64 @@ class RuleParser {
 		this.parser = parser;
 	}
 
+	loadServerField(server, servers) {
+		if (typeof server === 'string') {
+			if (servers[server]) {
+				return servers[server];
+			}
+			// *.*.*.* | [(*:){2,7}*] | [(*:){2,6}*.*.*.*] | *:* | (*:){2,7}* | (*:){2,6}*.*.*.* | *@*
+			else if (/^(?:(?:(?:\d+\.){3}\d+|\[(?:[0-9a-fA-F]*:){2,7}[0-9a-fA-F]*\]|\[(?:[0-9a-fA-F]*:){2,6}(?:\d+\.){3}\d+)(?::\d+)?|(?:[0-9a-fA-F]*:){2,7}[0-9a-fA-F]*|\[(?:[0-9a-fA-F]*:){2,6}(?:\d+\.){3}\d+)(?:@\w+)?$/.test(server)) {
+				return parseServer(server);
+			}
+			else {
+				console.log(`Server '${server}' is not found in server list, use the default server`);
+				return this.defaultServer;
+			}
+		}
+		else {
+			return parseServer(server);
+		}
+	}
+
+	loadFileField(file, dir) {
+		if (!file) return null;
+		const exactFile = path.resolve(path.dirname(dir), file);
+		try {
+			return fs.readFileSync(exactFile, 'utf8');
+		}
+		catch(err) {
+			console.log(`Fail to load file '${file}'`);
+			throw err;
+		}
+	}
+
 	initRules(rules = [], servers, configPath) {
 		this.inputRules = rules;
 
 		// TODO: use asynchronous way to parse
 		// Promise.all(rules.map((elem, index) => {
 		this.rules = rules.map((elem, index) => {
-			let { type, file, server } = elem;
-			
-			if (server) {
-				if (typeof server === 'string') {
-					if (servers[server]) {
-						server = servers[server];
-					}
-					// *.*.*.* | [(*:){2,7}*] | [(*:){2,6}*.*.*.*] | *:* | (*:){2,7}* | (*:){2,6}*.*.*.* | *@*
-					else if (/^(?:(?:(?:\d+\.){3}\d+|\[(?:[0-9a-fA-F]*:){2,7}[0-9a-fA-F]*\]|\[(?:[0-9a-fA-F]*:){2,6}(?:\d+\.){3}\d+)(?::\d+)?|(?:[0-9a-fA-F]*:){2,7}[0-9a-fA-F]*|\[(?:[0-9a-fA-F]*:){2,6}(?:\d+\.){3}\d+)(?:@\w+)?$/.test(server)) {
-						server = parseServer(server);
-					}
-					else {
-						console.log(`Server '${server}' is not found in server list, use the default server`);
-						server = this.defaultServer;
-					}
-				}
-				else {
-					server = parseServer(server);
-				}
-			}
-
 			try {
+				let { type } = elem;
+				let item = Object.assign({}, elem);
+
 				const Parser = this.parser[type];
 				if (!Parser) {
 					throw new ReferenceError(`Parser '${type}' is not defined`);
 				}
 
-				const exactFile = path.resolve(path.dirname(configPath), file);
+				const { file, server } = Parser.fields;
+				file.forEach(e => item[e] = this.loadFileField(item[e], configPath));
+				server.forEach(e => item[e] = this.loadServerField(item[e], servers));
 
-				try {
-					const data = fs.readFileSync(exactFile, 'utf8');
+				const parser = new Parser();
+				parser.init(item);
 
-					const parser = new Parser();
-					parser.parse(data);
-
-					return {
-						file,
-						exactFile,
-						index,
-						server,
-						parser
-					};
-				}
-				catch (err) {
-					console.log(`Parser '${type}' cannot resolve file '${file}'`);
-					console.log(err);
-					return;
-				}
+				return Object.assign(item, {
+					index,
+					parser,
+					raw: elem
+				});
 			}
 			catch (err) {
 				console.log(`Rule #${index} cannot be parsed`);
@@ -129,17 +150,13 @@ class RuleParser {
 			domain = domain.substr(0, len - 1);
 		}
 		for (let rule of this.rules) {
-			const { file, index, server, parser } = rule;
-			if (parser.test(domain)) {
-				return {
-					file,
-					index,
-					server
-				};
+			const { index, parser } = rule;
+			const result = parser.test(domain);
+			if (result) {
+				return Object.assign({ index }, result);
 			}
 		}
 		return this.defaultServer ? {
-			file: null,
 			index: -1,
 			server: this.defaultServer
 		} : null;
