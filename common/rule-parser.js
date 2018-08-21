@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { parseServer } = require('./utils');
 const dir = path.resolve(__dirname, '../parsers/');
 
 class RuleParser {
@@ -58,13 +59,32 @@ class RuleParser {
 		this.parser = parser;
 	}
 
-	initRules(rules = [], configPath) {
+	initRules(rules = [], servers, configPath) {
 		this.inputRules = rules;
 
 		// TODO: use asynchronous way to parse
 		// Promise.all(rules.map((elem, index) => {
 		this.rules = rules.map((elem, index) => {
 			let { type, file, server } = elem;
+			
+			if (server) {
+				if (typeof server === 'string') {
+					if (servers[server]) {
+						server = servers[server];
+					}
+					// *.*.*.* | [(*:){2,7}*] | [(*:){2,6}*.*.*.*] | *:* | (*:){2,7}* | (*:){2,6}*.*.*.* | *@*
+					else if (/^(?:(?:(?:\d+\.){3}\d+|\[(?:[0-9a-fA-F]*:){2,7}[0-9a-fA-F]*\]|\[(?:[0-9a-fA-F]*:){2,6}(?:\d+\.){3}\d+)(?::\d+)?|(?:[0-9a-fA-F]*:){2,7}[0-9a-fA-F]*|\[(?:[0-9a-fA-F]*:){2,6}(?:\d+\.){3}\d+)(?:@\w+)?$/.test(server)) {
+						server = parseServer(server);
+					}
+					else {
+						console.log(`Server '${server}' is not found in server list, use the default server`);
+						server = this.defaultServer;
+					}
+				}
+				else {
+					server = parseServer(server);
+				}
+			}
 
 			try {
 				const Parser = this.parser[type];

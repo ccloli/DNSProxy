@@ -98,31 +98,10 @@ const loadConfig = (path) => {
 	settings.timeout = +settings.timeout;
 
 	// parse servers
-	const { servers, rules } = result;
+	const { servers } = result;
 	Object.keys(servers).forEach(key => {
 		servers[key] = parseServer(servers[key]);
 	});
-	for (let rule of rules) {
-		const { server } = rule;
-		if (server) {
-			if (typeof server === 'string') {
-				if (servers[server]) {
-					rule.server = servers[server];
-				}
-				// *.*.*.* | [(*:){2,7}*] | [(*:){2,6}*.*.*.*] | *:* | (*:){2,7}* | (*:){2,6}*.*.*.* | *@*
-				else if (/^(?:(?:(?:\d+\.){3}\d+|\[(?:[0-9a-fA-F]*:){2,7}[0-9a-fA-F]*\]|\[(?:[0-9a-fA-F]*:){2,6}(?:\d+\.){3}\d+)(?::\d+)?|(?:[0-9a-fA-F]*:){2,7}[0-9a-fA-F]*|\[(?:[0-9a-fA-F]*:){2,6}(?:\d+\.){3}\d+)(?:@\w+)?$/.test(server)) {
-					rule.server = parseServer(server);
-				}
-				else {
-					console.log(`Server '${server}' is not found in server list, use the default server`);
-					rule.server = servers.default;
-				}
-			}
-			else {
-				rule.server = parseServer(server);
-			}
-		}
-	}
 
 	return result;
 };

@@ -256,7 +256,7 @@ const init = () => {
 	const rules = new RuleParser();
 	rules.initDefaultServer(defaultServer);
 	rules.initParsers(config['extend-parsers'], input['config-file']);
-	rules.initRules(config.rules, input['config-file']);
+	rules.initRules(config.rules, servers, input['config-file']);
 
 	let udpServer;
 	let tcpServer;
