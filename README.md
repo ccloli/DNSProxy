@@ -12,14 +12,16 @@ DNSProxy is a simple DNS proxy server, which helps you to forward DNS requests f
 - Bind proxy server with any IP or port
 - Support TCP and UDP protocol to create proxy server
 - Lookup upstream server with specific port and common protocol (UDP, TCP)
-- Lookup upstream server with DNS-over-TLS (experiment)
+- Lookup upstream server with DNS-over-TLS (experiment)<sup>*</sup>
 - Both proxy server and upstream server support IPv4 and IPv6
 - Wildcard rules and regular expression rules
 - Custom parser to extend more rules!
 
+<sup>*</sup> DNS-over-TLS (also TCP and UDP) only supports IP address, domain name is invalid at this time. Also the server should have a valid IP address certificate, e.g. CloudFlare's `1.1.1.1` is okay, because its certificate lists `1.1.1.1` and other IP addresses owned by CloudFlare; Quad9's `9.9.9.9` will not working (at this time) because its certificate doesn't support IP addresses, and `dns.quad9.net` is probably not working because it's a domain, not an IP address.
+
 ## Use Cases
 
-- Use TCP DNS on your operating system
+- Use TCP DNS or TLS DNS on your operating system
 - Use public DNS server but forward Intranet domains to your company DNS server
 - Use DNS server provided by ISP for speed, and slower DNSCrypt server for poisoned domains
 
@@ -208,13 +210,13 @@ jkl.*             # will match `jkl.com`, `jkl.net`, `jkl.co.jp`
 sub.stu.def.com   # but will include `sub.stu.def.com` again
 ```
 
-## Extend
+## Extra
 
 ### Create custom parser
 
 You can create your custom parser to add support of any type rule file.
 
-To create a custom parser, you only need to write a constructor function, that its instances have a `parse()` method to parse rule file and a `test()` method to detect if the domain follow the rules.
+To create a custom parser, you only need to write a constructor function, that its instances have a `init()` method to initialize the parser, and a `test()` method to detect if the domain follow the rules.
 
 You can check `parsers/` folder to get some examples and ideas. Here is an template that uses ES6 class to create a custom type `example`:
 
@@ -225,37 +227,46 @@ You can check `parsers/` folder to get some examples and ideas. Here is an templ
  * @class example
  */
 class example {
-    constructor(rules) {
+    constructor(config) {
         this.parsedRules = [];
-        if (rules) {
-            this.parse(rules);
+        this.server = null;
+        if (config) {
+            this.init(config);
         }
     }
 
     /**
-     * Parse input data, save parsed data to this.parsedRules
+     * Parse input config, save server to `this.server`,
+     * and save parsed rules to `this.parsedRules`
      * 
      * @public 
-     * @param {string} rules - the rules needs to parse
+     * @param {object} config - the config needs to be parsed
      * @memberof example
      */
-    parse(rules) {
-        this.parsedRules = doSomething(rules);
+    init(config) {
+        this.server = config.server;
+        this.parsedRules = doSomething(config.file);
     }
 
     /**
      * Test if the domain matches one of the rules
+     *
+     * If it matches, return an object that has a `server` field,
+     * and the value is the server that passed to `this.init()`
+     * If it doesn't match, return `null`
      * 
      * @public 
      * @param {string} host - the domain name needs to be checked
-     * @returns {boolean} the host matches the rules or not
+     * @returns {object|null} the host matches the rules or not
      * @memberof example
      */
     test(host) {
         if (hostMatchRule(host, this.parsedRules)) {
-            return true;
+            return {
+                server: this.server
+            };
         }
-        return false;
+        return null;
     }
 }
 
@@ -265,11 +276,11 @@ module.exports = example;
 You can also use ES5- prototype to write your code:
 
 ```js
-function example(rules) {
+function example(config) {
     // TODO
 }
 example.prototype = {
-    parse: function(rules) {
+    init: function(config) {
         // TODO
     },
     test: function(host) {
@@ -280,21 +291,65 @@ example.prototype = {
 module.exports = example;
 ```
 
-After you finish the work, put the file to somewhere safe. Then add an array field `extend-parsers` to your config file if it doesn't have, and put the file path in it like this, save and reload to have a test!
+### Set custom fields for your parser
+
+DNSProxy will treat `server` field as server and `file` field as file by default. When user set these fields, DNSProxy will format `server` to standard server object, and load file content from `file` field.
+
+If you have other fields and want DNSProxy to parse them as server or file, you can use `fieldType` property to define them. Or you can say the default `fieldType` will be like this:
+
+```js
+{
+    // field: type
+    "file": "file",
+    "server": "server"
+}
+```
+
+For example, if you want to use field `server` and `anotherServer` to store server, and load file contents that set in `rule` and `anotherRule` in parser `anotherExample`, you can add `fieldType` property to define them before `module.exports`:
+
+```js
+class anotherExample { ... }
+
+anotherExample.fieldType = {
+    server: 'server',
+    anotherServer: 'server',
+    rule: 'file',
+    anotherRule: 'file'
+};
+
+module.exports = anotherExample;
+```
+
+Please note that if you have other fields will be used in parser, and they are neither server nor file, **don't** set them in `fieldType`. What you need to do is nothing, DNSProxy will pass all the config to parser, only helps you to format servers and load files.
+
+### Use custom parsers
+
+After you finish a custom parser or want to try a custom parser, put the file to somewhere safe. Then add an array field `extend-parsers` to your config file if it doesn't have, and put the file path in it like this, save and reload to have a test!
 
 ```js
 {
     ...
     "extend-parsers": [
-        "path/to/parser/example.js"
+        "path/to/parser/example.js",
+        "path/to/parser/anotherExample.js",
     ],
     "rules": [
-        { "file": "path/to/rule.txt", "type": "example", "server": { ... } }
+        { "type": "example", "file": "path/to/rule.txt", "server": { ... } },
+        {
+            "type": "anotherExample",
+            "rule": "path/to/rule.txt",
+            "anotherRule": "path/to/another/rule.txt",
+            "server": { ... },
+            "anotherServer": "...",
+            "xxx": "I'm not in `fieldType` but I'll be passed to parser"
+        }
     ]
 }
 ```
 
-If you make it a npm package, you can ask your user to `npm install -g` it, and add it to `extend-parsers` prefixing with `npm:`. Assume you made a package named `dnsproxy-foo-parser`, and you named the parser `foo` (`class foo {}`), user can use it like this:
+### Load custom parser from npm package
+
+If you make your parser a npm package, you can ask your user to `npm install -g` it, and add it to `extend-parsers` prefixing with `npm:`. Assume you made a package named `dnsproxy-foo-parser`, and you named the parser `foo` (`class foo {}`), user can use it like this:
 
 ```js
 {
@@ -309,6 +364,8 @@ If you make it a npm package, you can ask your user to `npm install -g` it, and 
     ]
 }
 ```
+
+### Rename parsers in config file
 
 If for some reason you want to rename your parsers when they're using in rules, you can suffix the path with vertical bar (`|`) and its new name. Assume you also made another parser in a local file, and its name is `foo`, too. You can use both of them like this:
 
