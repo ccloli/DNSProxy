@@ -4,7 +4,7 @@ const parseServer = (input) => {
 	const init = {
 		host: '127.0.0.1',
 		port: 53,
-		type: 'udp'
+		type: null
 	};
 
 	const parseString = (str) => {
@@ -50,9 +50,7 @@ const parseServer = (input) => {
 			type: type || init.type
 		};
 	}
-	else {
-		return null;
-	}
+	return null;
 };
 
 const sumBuffer = (buffer) => {

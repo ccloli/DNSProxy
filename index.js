@@ -67,11 +67,13 @@ const setupUDPServer = (host, port, timeout, rules) => {
 		// see https://stackoverflow.com/questions/4082081
 		// so as for now, we can assume all the packets will have only one question
 		const resolve = rules.resolve(packet.Question[0].Name);
-		const { server, index } = resolve;
+		let { server, index } = resolve;
+		server = Object.assign({}, server);
 
 		if (isIPv6(server.host)) {
 			server.host = addIPv6Bracket(trimIPv6Bracket(server.host));
 		}
+		server.type = server.type || 'udp';
 
 		if (
 			server.port === port && (isWildcardIP(host) ? 
@@ -175,11 +177,13 @@ const setupTCPServer = (host, port, timeout, rules) => {
 				// we can only resolve the first question,
 				// thought most of requests has only one question
 				const resolve = rules.resolve(packet.Question[0].Name);
-				const { server, index } = resolve;
+				let { server, index } = resolve;
+				server = Object.assign({}, server);
 
 				if (isIPv6(server.host)) {
 					server.host = addIPv6Bracket(trimIPv6Bracket(server.host));
 				}
+				server.type = server.type || 'tcp';
 				
 				if (
 					server.port === port && (isWildcardIP(host) ? 
