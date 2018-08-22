@@ -26,7 +26,9 @@
 			// if you emit port, it'll be `53`
 			"port": "53",
 			// name server protocol, `tcp`, `udp` or `tls`
-			// if you emit protocol, it'll be `udp`
+			// if you emit protocol, it'll be based on your request,
+			// if you request the server with UDP, then it'll be UDP,
+			// if you request the server with TCP, then it'll be TCP
 			"type": "udp"
 		},
 		// another name server
@@ -49,7 +51,7 @@
 			"type": "tls"
 		},
 		// you can use a plain string instead of an object
-		// scheme is `<ip>[:<port = 53>][@<protocol = udp>]`
+		// scheme is `<ip>[:<port = 53>][@<protocol>]`
 		"google-tcp": "8.8.8.8:443@tcp",
 		"google-ipv6": "[2001:4860:4860::8888]",
 		"cloudflare-tls": "1.1.1.1@tls",

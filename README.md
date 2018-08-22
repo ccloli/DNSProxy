@@ -104,29 +104,33 @@ You can set how the proxy server works at `settings` field, like only enable TCP
 
 ### Name server config
 
-You can config some common name servers at `servers` field. Give it a name, fill its attribute, then reference it in `rules`.
+You can config some common name servers at `servers` field. Give it a name, set its properties, then use it in `rules`.
 
 You should specify a `default` server, so that if a domain doesn't match any rule, it'll be looked up from the `default` server.
 
 The name server config accepts the following formats:
 
 ```js
-// a common plain object, specify all the needed fields
+// a common plain object, use UDP if request with UDP,
+// and use TCP if request with TCP
+{ "host": "127.0.0.1", "port": 53 }
+
+// specify all the needed fields, force using UDP protocol
 { "host": "127.0.0.1", "port": 53, "type": "udp" }
 
-// another common object, but use a IPv6 host
+// use an IPv6 host, another port and TCP protocol
 { "host": "[::1]", "port": 5353, "type": "tcp" }
 
 // combine host and port to `host`
 { "host": "[::1]:5353", "type": "tcp" }
 
-// ignore port and type, will use port `53` and `udp` protocol by default
-// the following object will be the same as the first one
-{ "host": "127.0.0.1", "port": 53 }
-{ "host": "127.0.0.1", "type": "udp" }
+// ignore port, will use port `53` by default
 { "host": "127.0.0.1" }
+// and if type is `tls`, port will be `853` by default
+{ "host": "127.0.0.1", "port": 853, "type": "tls" }
+{ "host": "127.0.0.1", "type": "tls" }
 
-// or just a string, syntax is `<host>[:<port=53>][@<type=udp>]`
+// or just a string, syntax is `<host>[:<port=53>][@<type>]`
 "127.0.0.1:53@udp"
 "[::1]:5353@tcp"
 "127.0.0.1:53"
@@ -156,8 +160,8 @@ To make it clear, suppose you define 2 name servers in `servers`, named `default
     "tcp": { ... },
     "udp": { ... },
     "servers": {
-        "default": { "host": "1.1.1.1", "port": "53", "type": "udp" },
-        "google":  { "host": "8.8.8.8", "port": "53", "type": "udp" }
+        "default": { "host": "1.1.1.1", "port": "53" },
+        "google":  { "host": "8.8.8.8", "port": "53" }
     },
     "rules": [{
         "file": "rules/one.txt",
@@ -166,7 +170,7 @@ To make it clear, suppose you define 2 name servers in `servers`, named `default
     }, {
         "file": "rules/another.txt",
         "type": "list",
-        "server": { "host": "1.2.4.8", "port": "53", "type": "udp" }
+        "server": { "host": "1.2.4.8", "port": "53" }
     }]
 }
 ```
