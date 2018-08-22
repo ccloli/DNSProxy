@@ -17,7 +17,7 @@ const tcpPacketToUdpPacket = (data, tc = false) => {
 		if (tc) {
 			data = data.split(0, 512);
 			// set TC to 1
-			data[3] |= 4;
+			data[2] |= 2;
 			console.warn('*TCP->UDP* Packet size is larger than 512 bytes, data is truncated and TC is set to true.');
 		}
 		else {

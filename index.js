@@ -145,7 +145,11 @@ const setupTCPServer = (host, port, timeout, rules) => {
 			},
 			udp: (msg, server) => {
 				msg = tcpPacketToUdpPacket(msg);
-				return Promise.resolve(tcpLookup(msg, server.port, server.host, timeout).then(data => {
+				return Promise.resolve(udpLookup(msg, server.port, server.host, timeout).then(data => {
+					if (data[2] & 2) {
+						console.log('[TCP] (UDP) Response data is truncated, try looking up with TCP');
+						return lookup.tcp(udpPacketToTcpPacket(msg), server);
+					}
 					data = udpPacketToTcpPacket(data);
 					msg = null;
 					return response(data);
