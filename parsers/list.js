@@ -6,8 +6,6 @@
 class list {
 	constructor(config) {
 		this.pattern = [];
-		this.include = [];
-		this.exclude = [];
 		this.server = null;
 
 		if (config) {
@@ -79,10 +77,6 @@ class list {
 	/**
 	 * Parse input data, save parsed patterns to this.patterns
 	 * 
-	 * Put include and exclude indexes to this.include and this.exclude,
-	 * so that when searching one rule type, the other one will not in queue,
-	 * so that we can skip most the unwanted data
-	 * 
 	 * @private
 	 * @param {string} data - the data needs to parse
 	 * @memberof list
@@ -90,32 +84,36 @@ class list {
 	parse(data) {
 		const list = data.split(/\r?\n/);
 		const pattern = [];
-		const include = [];
-		const exclude = [];
 		list.forEach(elem => {
 			try {
-				let target = include;
+				let exclude = false;
+				// remove comments
 				elem = elem.replace(/#.*/, '').trim();
 
+				// check if the rule is exclude rule
 				if (elem[0] === '-') {
-					target = exclude;
+					exclude = true;
 					elem = elem.substr(1);
 				}
+				// check if the rule is empty
 				if (!elem) {
 					return;
 				}
 
-				// `pattern` only store pattern
+				let regexp;
+				// check if the rule is an regular expression
 				if (elem[0] === '/') {
-					pattern.push(this.parseRegExp(elem));
+					regexp = this.parseRegExp(elem);
 				}
 				else {
-					pattern.push(this.parseWildcard(elem));
+					regexp = this.parseWildcard(elem);
 				}
 
-				// cross-save indexes will help us split data and use in foreach
-				const index = pattern.length - 1;
-				target[index] = index;
+				// the latter one has a higher precedence
+				pattern.unshift({
+					regexp,
+					exclude
+				});
 			}
 			catch(err) {
 				console.log(`Fail to parse rule ${elem}`);
@@ -123,70 +121,6 @@ class list {
 			}
 		});
 		this.pattern = pattern;
-		this.include = include;
-		this.exclude = exclude;
-	}
-
-	/**
-	 * Test if domain matches include or exclude rules
-	 * 
-	 * If a rule matches one of include rules, then it'll test the rest 
-	 * of exclude rules, and if it matches one, it'll test the rest of 
-	 * include rules, and so on, until test all the rest rules.
-	 * 
-	 * @private
-	 * @param {string} host - the domain name needs to be checked
-	 * @param {boolean} [exclude=false] - test exclude rules or not
-	 * @param {number} [index=0] - start index
-	 * @returns  {boolean} the host should be include or not
-	 * @memberof list
-	 */
-	crossTest(host, exclude = false, index = 0) {
-		// test include first, then exclude
-		// 
-		// if we don't set the field in array, it'll be a `empty` field,
-		// use `for...in` and ES5 Array methods will ignore `empty` fields
-		// with this way we can skip most unwanted rules to test
-		// (however `for...of` will include `empty` field ¯\_(ツ)_/¯)
-		//
-		// if `for...of` ignores the `empty` field, the code can be written as
-		/*
-		for (let i of this.include.slice(index)) {
-			if (this.pattern[i].test(host)) {
-				for (let j of this.exclude.slice(i)) {
-					if (this.pattern[j].test(host)) {
-						return this.crossTest(host, j);
-					}
-				}
-				return true;
-			}
-		}
-		return false;
-		*/
-
-		// assume host doesn't match any rules
-		let res = false;
-		const target = exclude ? this.exclude : this.include;
-
-		// use `Array.prototype.some` to iterate the array,
-		// as `for...of` will include the empty fields
-		// but we don't use the return result as the final result,
-		// because if the result is `false`, it'll continue to test the rest,
-		// so we record the result manually, and use `return true` to break the loop
-		target.slice(index).some(i => {
-			// as we cross-save indexes in `include` and `exclude`,
-			// `i` is the real index of target pattern
-			if (this.pattern[i].test(host)) {
-				// host matches any rules
-				// test the rest of another type rules
-				// `res` is the final result
-				res = !this.crossTest(host, !exclude, i);
-				// `return true` only means break the loop
-				return true;
-			}
-		});
-
-		return res;
 	}
 
 	/**
@@ -198,9 +132,14 @@ class list {
 	 * @memberof list
 	 */
 	test(host) {
-		return this.crossTest(host) ? {
-			server: this.server
-		} : null;
+		for (let { regexp, exclude } of this.pattern) {
+			if (regexp.test(host)) {
+				return exclude ? null : {
+					server: this.server
+				};
+			}
+		}
+		return null;
 	}
 }
 
