@@ -6,7 +6,6 @@ const parseServer = (input) => {
 		port: 53,
 		type: 'udp'
 	};
-	console.log(input);
 
 	const parseString = (str) => {
 		let [server, type] = str.trim().split('@', 2);
