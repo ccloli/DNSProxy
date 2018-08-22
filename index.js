@@ -4,7 +4,9 @@ const path = require('path');
 const { udpLookup, tcpLookup, tlsLookup } = require('./common/request');
 const { udpPacketToTcpPacket, tcpPacketToUdpPacket } = require('./common/convert');
 const { parseTCPPacket, parseUDPPacket } = require('./common/packet-parser');
-const { isIPv6, isWildcardIP, isLookbackIP, isLocalIP, isSameIP } = require('./common/utils');
+const {
+	isIPv6, isWildcardIP, isLookbackIP, isLocalIP, isSameIP, trimIPv6Bracket, addIPv6Bracket
+} = require('./common/utils');
 const loadConfig = require('./common/load-config');
 const RuleParser = require('./common/rule-parser');
 const { DNSTYPE } = require('./common/consts');
@@ -67,6 +69,10 @@ const setupUDPServer = (host, port, timeout, rules) => {
 		const resolve = rules.resolve(packet.Question[0].Name);
 		const { server, index } = resolve;
 
+		if (isIPv6(server.host)) {
+			server.host = addIPv6Bracket(trimIPv6Bracket(server.host));
+		}
+
 		if (
 			server.port === port && (isWildcardIP(host) ? 
 				isLocalIP(server.host) || isLookbackIP(server.host) : 
@@ -92,7 +98,7 @@ const setupUDPServer = (host, port, timeout, rules) => {
 	udpServer.on('listening', () => {
 		let { address, port } = udpServer.address();
 		if (isIPv6(address)) {
-			address = `[${address}]`;
+			address = addIPv6Bracket(trimIPv6Bracket(address));
 		}
 		console.log(`[UDP] Server listening ${address}:${port}`);
 	});
@@ -166,6 +172,10 @@ const setupTCPServer = (host, port, timeout, rules) => {
 				// thought most of requests has only one question
 				const resolve = rules.resolve(packet.Question[0].Name);
 				const { server, index } = resolve;
+
+				if (isIPv6(server.host)) {
+					server.host = addIPv6Bracket(trimIPv6Bracket(server.host));
+				}
 				
 				if (
 					server.port === port && (isWildcardIP(host) ? 
@@ -204,7 +214,7 @@ const setupTCPServer = (host, port, timeout, rules) => {
 	tcpServer.on('listening', () => {
 		let { address, port } = tcpServer.address();
 		if (isIPv6(address)) {
-			address = `[${address}]`;
+			address = addIPv6Bracket(trimIPv6Bracket(address));
 		}
 		console.log(`[TCP] Server listening ${address}:${port}`);
 	});

@@ -6,13 +6,14 @@ const parseServer = (input) => {
 		port: 53,
 		type: 'udp'
 	};
+	console.log(input);
 
 	const parseString = (str) => {
 		let [server, type] = str.trim().split('@', 2);
 		// lookbehind assertions finally added in ECMAScript 2018
 		// str.split(/(?<=(?:[0-9.]+|\[[0-9a-fA-F:.]+\])):/)
 		// for compatibility, use match instead
-		let [, host, port] = server.match(/^([0-9.]+|\[[0-9a-fA-F:.]+\])(?::(\d+))?$/) || [];
+		let [, host, port] = server.match(/^([\d\w-.]+|\[[0-9a-fA-F:.]+\]|(?:[0-9a-fA-F]*:){2}[0-9a-fA-F:.]*$)(?::(\d+))?$/) || [];
 		return {
 			host,
 			port,
