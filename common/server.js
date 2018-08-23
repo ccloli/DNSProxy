@@ -3,9 +3,7 @@ const net = require('net');
 const { udpLookup, tcpLookup, tlsLookup } = require('./request');
 const { udpPacketToTcpPacket, tcpPacketToUdpPacket } = require('./convert');
 const { parseTCPPacket, parseUDPPacket } = require('./packet-parser');
-const {
-	isIPv6, isWildcardIP, isLookbackIP, isLocalIP, isSameIP, trimIPv6Bracket, addIPv6Bracket
-} = require('./utils');
+const { isIPv6, isWildcardIP, isLookbackIP, isLocalIP, isSameIP, addIPv6Bracket } = require('./utils');
 const { DNSTYPE } = require('./consts');
 
 const setupUDPServer = (host, port, timeout, rules) => {
@@ -68,7 +66,7 @@ const setupUDPServer = (host, port, timeout, rules) => {
 		server = Object.assign({}, server);
 
 		if (isIPv6(server.host)) {
-			server.host = addIPv6Bracket(trimIPv6Bracket(server.host));
+			server.host = addIPv6Bracket(server.host);
 		}
 		server.type = server.type || 'udp';
 
@@ -97,7 +95,7 @@ const setupUDPServer = (host, port, timeout, rules) => {
 	udpServer.on('listening', () => {
 		let { address, port } = udpServer.address();
 		if (isIPv6(address)) {
-			address = addIPv6Bracket(trimIPv6Bracket(address));
+			address = addIPv6Bracket(address);
 		}
 		console.log(`[UDP] Server listening ${address}:${port}`);
 	});
@@ -180,7 +178,7 @@ const setupTCPServer = (host, port, timeout, rules) => {
 				server = Object.assign({}, server);
 
 				if (isIPv6(server.host)) {
-					server.host = addIPv6Bracket(trimIPv6Bracket(server.host));
+					server.host = addIPv6Bracket(server.host);
 				}
 				server.type = server.type || 'tcp';
 				
@@ -236,7 +234,7 @@ const setupTCPServer = (host, port, timeout, rules) => {
 	tcpServer.on('listening', () => {
 		let { address, port } = tcpServer.address();
 		if (isIPv6(address)) {
-			address = addIPv6Bracket(trimIPv6Bracket(address));
+			address = addIPv6Bracket(address);
 		}
 		console.log(`[TCP] Server listening ${address}:${port}`);
 	});
