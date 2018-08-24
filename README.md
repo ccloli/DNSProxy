@@ -96,19 +96,25 @@ Your config will be merged with default config, if you don't specify some fields
 
 You can set how the proxy server works at `settings` field, like only enable TCP server, bind to a different port instead of `53` port.
 
-- `tcp`: Enable TCP proxy server or not
-- `udp`: Enable UDP proxy server or not
-- `host`: The IP address that proxy server will bind. Use IPv6 all-zero address (`[::]`) will also accept requests to IPv4 `0.0.0.0`, but set IPv4 address `0.0.0.0` will not accept requests to `[::]`
-- `port`: The port that proxy server will listen
-- `timeout`: The maximum time in millisecond (ms) to wait upstream name server responses. If the upstream server doesn't return data in time, the connection to it will close
+| Field | Default | Type | Description | Note |
+| ----- | ------- | -------- | ----------- | ---- |
+| `tcp` | `false` | _boolean_  | Enable TCP proxy server or not | |
+| `udp` | `false` | _boolean_  | Enable UDP proxy server or not | |
+| `host` | `::` | _string_  | The IP address that proxy server will bind | Use IPv6 all-zero address (`[::]`) will also accept requests to IPv4 `0.0.0.0`, but set IPv4 address `0.0.0.0` will not accept requests to `[::]` |
+| `port` | `53` | _number_  | The port that proxy server will listen | |
+| `timeout` | `5000` | _number_  | The maximum time in millisecond (ms) to wait upstream name server responses | If the upstream server doesn't return data in time, the connection to it will close |
 
 ### Name server config
 
-You can config some common name servers at `servers` field. Give it a name, set its properties, then use it in `rules`.
+You can config some common name servers at `servers` field. Give it a name, set its properties, then use it in `rules`. The server config can be a plain object or a string, the fields of config are showing below:
 
-You should specify a `default` server, so that if a domain doesn't match any rule, it'll be looked up from the `default` server.
+| Field | Default | Type | Description | Note |
+| ----- | ------- | -------- | ----------- | ---- |
+| `host` | `127.0.0.1` | _string_  | The DNS server to lookup | If `host` is a domain like using DNS-over-TLS, the domain will be lookup with Node.js `dns.lookup()` and it's not controlled by DNSProxy |
+| `port` | `53` | _number_  | The port of DNS server | If the server is a TLS server, the default port will be `853` |
+| `type` | `null` | _string_  | The protocol of DNS server | Leave it blank will use UDP or TCP by your request. You can force set the DNS server protocol with `udp`, `tcp` and `tls` |
 
-The name server config accepts the following formats:
+You can also use a string to define a server, the syntax is `<host>[:<port=53>][@<type>]`.
 
 ```js
 // a common plain object, use UDP if request with UDP,
@@ -138,6 +144,8 @@ The name server config accepts the following formats:
 "127.0.0.1:853@tls"
 "127.0.0.1"
 ```
+
+You should specify a `default` server, so that if a domain doesn't match any rule, it'll be looked up from the `default` server.
 
 ### Rule config
 
@@ -184,6 +192,12 @@ Here is the offical supported rule parsers. They should fit most of common use c
 ### `list`
 
 List type is the basic type of DNSProxy rule parser. 
+
+| Field | Default | Type | Description | Note |
+| ----- | ------- | -------- | ----------- | ---- |
+| `type` | `list` | _string_  | The rule parser will be used |  |
+| `file` |  | _string_  | The path of rule file |  |
+| `server` | `default` | _string\|object_  | The DNS server to use for lookup | |
 
 A `list` rule file is a list of domain. If a domain is in the list, then it'll match the rule. To make it easier to use, you can even use wildcard letters or regular expression to match multiple domains.
 
