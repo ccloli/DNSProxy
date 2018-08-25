@@ -1,6 +1,6 @@
 {
   "name": "dnsproxy",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Proxy and forward your DNS request!",
   "main": "index.js",
   "bin": {
