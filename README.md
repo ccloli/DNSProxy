@@ -17,7 +17,7 @@ DNSProxy is a simple DNS proxy server, which helps you to forward DNS requests f
 - Wildcard rules and regular expression rules
 - Custom parser to extend more rules!
 
-<sup>*</sup> DNS-over-TLS (RFC7858) is different from DNS-over-HTTPS or DNSCrypt, they are not the same standard. It's still in experiment because DNSProxy doesn't support reuse connection as DNSProxy doesn't have a good algorithm to close idle connection, so please be awared that it may have a long latency because of TLS handshaking. Thought it supports IP address and domain as `host`, please note that if the server is a domain name, it may require a DNS lookup by Node.js with [`dns.lookup()`](https://nodejs.org/api/dns.html#dns_dns_lookup) to get the IP address of server, and it's controlled by libuv's `getaddrinfo`. That means the lookup is **not** controlled by DNSProxy, it may send a DNS query from OS side, or resolve from `hosts` file or from OS DNS cache pool. Since it's not controlled by DNSProxy (or say controlled by you), the IP address responses from `dns.lookup()` is probably not what you want. Also the server should have a valid certificate, e.g. CloudFlare's `1.1.1.1` is okay, because its certificate lists `1.1.1.1` and other IP addresses owned by CloudFlare; Quad9's `9.9.9.9` will not working (at this time) because its certificate doesn't support IP addresses, but `dns.quad9.net` is fine because its certificate lists it as a valid domain (except `dns.lookup()` gives you a poisoned IP address and the request is sent to another server); Google's `https://dns.google.com/query` is not working, because it's DNS-over-HTTPS, not DNS-over-TLS.
+<sup>*</sup> DNS-over-TLS (RFC7858) is different from DNS-over-HTTPS or DNSCrypt, they are not the same standard. It's still in experiment because DNSProxy doesn't support reuse connection as DNSProxy doesn't have a good algorithm to close idle connection, so please be awared that it may have a long latency because of TLS handshaking. Thought it supports IP address and domain as `host`, please note that if the server is a domain name, it may require a DNS lookup by Node.js with [`dns.lookup()`](https://nodejs.org/api/dns.html#dns_dns_lookup) to get the IP address of server, and it's controlled by libuv's `getaddrinfo`. That means the lookup is **not** controlled by DNSProxy, it may send a DNS query from OS side, or resolve from `hosts` file or from OS DNS cache pool. Since it's not controlled by DNSProxy (or say not controlled by you), the IP address responses from `dns.lookup()` is probably not what you want. Also the server should have a valid certificate, e.g. CloudFlare's `1.1.1.1` is okay, because its certificate lists `1.1.1.1` and other IP addresses owned by CloudFlare; Quad9's `9.9.9.9` will not working (at this time) because its certificate doesn't support IP addresses, but `dns.quad9.net` is fine because its certificate lists it as a valid domain (except `dns.lookup()` gives you a poisoned IP address and the request is sent to another server); Google's `https://dns.google.com/query` is not working, because it's DNS-over-HTTPS, not DNS-over-TLS.
 
 ## Use Cases
 
@@ -25,7 +25,7 @@ DNSProxy is a simple DNS proxy server, which helps you to forward DNS requests f
 - Use public DNS server but forward Intranet domains to your company DNS server
 - Use DNS server provided by ISP for speed, and slower DNSCrypt server for poisoned domains<sup>*</sup>
 
-<sup>*</sup> However for this use case, DNSCrypt can only help you to fix  _DNS poison_, it **cannot** help you to fix _MITM attack_, _firewall rules_, _IP banned_, _HTTP reset_, _TLS SNI reset_ and others that troubles your connection to target server. Use a proxy server, VPN  ~~and emigration~~ are better solutions.
+<sup>*</sup> However for this use case, DNSProxy can only help you to fix  _DNS poison_, it **cannot** help you to fix _MITM attack_, _firewall rules_, _IP banned_, _HTTP reset_, _TLS SNI reset_ and others that troubles your connection to target server. Use a proxy server, VPN  ~~and emigration~~ are better solutions.
 
 ## Install
 
@@ -80,6 +80,8 @@ The config file is a JSON file, it should follow the JSON structure. But you can
 To create a config file, you can use the sample file as template, then edit it as you like and save. 
 
 ```sh
+dnsproxy -i config.json
+# or copy the sample file
 cp config.sample.json config.json
 ```
 
@@ -176,8 +178,7 @@ To make it clear, suppose you define 2 name servers in `servers`, named `default
 
 ```js
 {
-    "tcp": { ... },
-    "udp": { ... },
+    "settings": { ... },
     "servers": {
         "default": { "host": "1.1.1.1", "port": "53" },
         "google":  { "host": "8.8.8.8", "port": "53" }
