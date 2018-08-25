@@ -58,8 +58,11 @@ npm install -g
   dnsproxy [options]
 
 Options:
-  -c, --config-file <path>      Specify the configuration file
-                                (default: ./config.json)
+  -c, --config-file <path>   Specify the configuration file
+                             (default: env['DNSPROXY_CONFIG'] || ./config.json)
+  -i, --init <path>          Create a configuration template file
+                             (default: ./config.json)
+  -h, --help                 Show help
 ```
 
 You can also specify a system environment variable `DNSPROXY_CONFIG` so that you don't need to pass `-c` option every time.

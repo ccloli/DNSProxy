@@ -1,25 +1,36 @@
 const path = require('path');
+const fs = require('fs');
 const loadConfig = require('./common/load-config');
 const RuleParser = require('./common/rule-parser');
 const { setupTCPServer, setupUDPServer } = require('./common/server');
 
 const loadInput = () => {
 	const inputShortMap = {
-		'c': 'config-file'
+		'c': 'config-file',
+		'i': 'init',
+		'h': 'help'
+	};
+	const defaultValue = {
+		'config-file': './config.json',
+		'init': './config.json',
+		'help': true
 	};
 
 	const input = {};
 	let lastInput = null;
 	for (let arg of process.argv.slice(2)) {
-		if (lastInput) {
+		if (arg.indexOf('-') === 0) {
+			if (arg.indexOf('--') === 0) {
+				lastInput = arg.substr(2);
+			}
+			else {
+				lastInput = inputShortMap[arg.substr(1)];
+			}
+			input[lastInput] = defaultValue[lastInput];
+		}
+		else if (lastInput) {
 			input[lastInput] = arg;
 			lastInput = null;
-		}
-		else if (arg.indexOf('--') === 0) {
-			lastInput = arg.substr(2);
-		}
-		else if (arg.indexOf('-') === 0) {
-			lastInput = inputShortMap[arg.substr(1)];
 		}
 	}
 
@@ -31,8 +42,7 @@ const loadInput = () => {
 	return input;
 };
 
-const init = () => {
-	const input = loadInput();
+const init = (input) => {
 	console.log(`Loading config file '${input['config-file']}'...`);
 	const config = loadConfig(input['config-file']);
 
@@ -83,5 +93,43 @@ const init = () => {
 	console.log('Press ^R to reload, ^C or ^Z to exit');
 };
 
+const printHelp = () => {
+	console.log(`Usage:
+  dnsproxy [options]
+
+Options:
+  -c, --config-file <path>   Specify the configuration file
+                             (default: env['DNSPROXY_CONFIG'] || ./config.json)
+  -i, --init <path>          Create a configuration template file
+                             (default: ./config.json)
+  -h, --help                 Show help
+`);
+};
+
+const main = () => {
+	const input = loadInput();
+
+	if (input.help) {
+		printHelp();
+		return;
+	}
+	if (input.init) {
+		const dir = path.resolve(input.init);
+		if (fs.existsSync(dir)) {
+			console.log(`File ${dir} is already exist.`);
+			return;
+		}
+		const read = fs.createReadStream(path.resolve(__dirname, './config.sample.json'));
+		const write = fs.createWriteStream(dir);
+		write.on('close', () => {
+			console.log(`Config template file ${dir} is created.`);
+		});
+		read.pipe(write);
+		return;
+	}
+
+	init(input);
+};
+
 console.log(`DNSProxy v${process.env.npm_package_version || require('./package.json').version}\n`);
-init();
+main();
