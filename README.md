@@ -23,7 +23,9 @@ DNSProxy is a simple DNS proxy server, which helps you to forward DNS requests f
 
 - Use TCP DNS or TLS DNS on your operating system
 - Use public DNS server but forward Intranet domains to your company DNS server
-- Use DNS server provided by ISP for speed, and slower DNSCrypt server for poisoned domains
+- Use DNS server provided by ISP for speed, and slower DNSCrypt server for poisoned domains<sup>*</sup>
+
+<sup>*</sup> However for this use case, DNSCrypt can only help you to fix  _DNS poison_, it **cannot** help you to fix _MITM attack_, _firewall rules_, _IP banned_, _HTTP reset_, _TLS SNI reset_ and others that troubles your connection to target server. Use a proxy server, VPN  ~~and emigration~~ are better solutions.
 
 ## Install
 
@@ -35,6 +37,12 @@ DNSProxy is a simple DNS proxy server, which helps you to forward DNS requests f
     * v10.x or higher
 
 <sup>*</sup> All Node.js releases before `v8.10.0` and Node.js `v9.0.0` have a critical bug that cannot compare IPv6 address with TLS certificates `IP Address` field correctly (see [nodejs/node#14736](https://github.com/nodejs/node/issues/14736)). If you get an error says _`Hostname/IP doesn't match certificate's altnames`_ and the certificate looks safe, please upgrade your Node.js to `v8.10.0`/`v9.1.0` or higher, or write the IPv6 address without shorten and pending zero, e.g. use `2606:4700:4700:0:0:0:0:1111` instead of `2606:4700:4700::1111` or `2606:4700:4700:0000:0000:0000:0000:1111`. If you don't need DNS-over-TLS with IPv6 DNS server, use any version of v8.x or higher should be fine.
+
+### Install form GitHub
+
+```sh
+npm install -g ccloli/DNSProxy
+```
 
 ### Clone from GitHub
 
