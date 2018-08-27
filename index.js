@@ -69,8 +69,8 @@ const init = (input) => {
 	}
 
 	const closeListener = (data) => {
-		const input = data[0];
-		switch (input) {
+		const keyCode = data[0];
+		switch (keyCode) {
 			case 0x03:
 			case 0x1a:
 				process.exit();
@@ -81,7 +81,7 @@ const init = (input) => {
 				console.log('Closing proxy servers...');
 				udpServer && udpServer.close();
 				tcpServer && tcpServer.close();
-				setTimeout(init, 0);
+				setTimeout(init, 0, input);
 				break;
 		}
 	};
