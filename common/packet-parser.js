@@ -28,13 +28,13 @@ const parseHeader = (data) => {
 	const ARCount = sumBuffer(data.slice(10, 12));
 	// deserialize config
 	const QR = config >> 15;
-	const OPCode = (config >> 11) & 0xffff;
+	const OPCode = config >> 11 & 15;
 	const AA = config >> 10 & 1;
 	const TC = config >> 9 & 1;
 	const RD = config >> 8 & 1;
 	const RA = config >> 7 & 1;
-	const Z = config >> 4 & 0x0fff;
-	const RCode = config & 0xffff;
+	const Z = config >> 4 & 7;
+	const RCode = config & 15;
 
 	return {
 		id, QR, OPCode, AA, TC, RD, RA, Z, RCode,
