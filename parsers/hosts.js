@@ -1,5 +1,5 @@
-const { isIPv6 } = require('../common/utils');
-const { DNSTYPE } = require('../common/consts');
+const { isIPv6 } = require('../lib/utils');
+const { DNSTYPE } = require('../lib/consts');
 
 class hosts {
 	constructor(config) {

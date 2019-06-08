@@ -1,8 +1,8 @@
 const path = require('path');
 const fs = require('fs');
-const loadConfig = require('./common/load-config');
-const RuleParser = require('./common/rule-parser');
-const { setupTCPServer, setupUDPServer } = require('./common/server');
+const loadConfig = require('./lib/load-config');
+const RuleParser = require('./lib/rule-parser');
+const { setupTCPServer, setupUDPServer } = require('./lib/server');
 
 const loadInput = () => {
 	const inputShortMap = {
