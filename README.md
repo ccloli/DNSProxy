@@ -15,6 +15,7 @@ DNSProxy is a simple DNS proxy server, which helps you to forward DNS requests f
 - Lookup upstream server with DNS-over-TLS (experiment)<sup>*</sup>
 - Both proxy server and upstream server support IPv4 and IPv6
 - Wildcard rules and regular expression rules
+- Or you can even use it lile a `hosts` file, with wildcards and regular expressions
 - Custom parser to extend more rules!
 
 <sup>*</sup> DNS-over-TLS (RFC7858) is different from DNS-over-HTTPS or DNSCrypt, they are not the same standard. It's still in experiment because DNSProxy doesn't support reuse connection as DNSProxy doesn't have a good algorithm to close idle connection, so please be awared that it may have a long latency because of TLS handshaking. Thought it supports IP address and domain as `host`, please note that if the server is a domain name, it may require a DNS lookup by Node.js with [`dns.lookup()`](https://nodejs.org/api/dns.html#dns_dns_lookup) to get the IP address of server, and it's controlled by libuv's `getaddrinfo`. That means the lookup is **not** controlled by DNSProxy, it may send a DNS query from OS side, or resolve from `hosts` file or from OS DNS cache pool. Since it's not controlled by DNSProxy (or say not controlled by you), the IP address responses from `dns.lookup()` is probably not what you want. Also the server should have a valid certificate, e.g. CloudFlare's `1.1.1.1` is okay, because its certificate lists `1.1.1.1` and other IP addresses owned by CloudFlare; Quad9's `9.9.9.9` will not working (at this time) because its certificate doesn't support IP addresses, but `dns.quad9.net` is fine because its certificate lists it as a valid domain (except `dns.lookup()` gives you a poisoned IP address and the request is sent to another server); Google's `https://dns.google.com/query` is not working, because it's DNS-over-HTTPS, not DNS-over-TLS.
@@ -240,6 +241,30 @@ jkl.*             # will match `jkl.com`, `jkl.net`, `jkl.co.jp`
 sub.stu.def.com   # but will include `sub.stu.def.com` again
 ```
 
+### `hosts`
+
+Hosts type allows you to specific the lookup result directly without looking up to other servers, and you can use it just like a `hosts` file.
+
+| Field | Default | Type | Description | Note |
+| ----- | ------- | -------- | ----------- | ---- |
+| `type` | `hosts` | _string_  | The rule parser will be used |  |
+| `file` |  | _string_  | The path of rule file |  |
+
+A `hosts` rule file is a list of IPs and domain. If a domain is in the list, then DNSProxy will returns its defined IP in file, just like using `hosts`. But you can set domain name using wildcards or regular expressions, which is the same as `list` parser. And you can set multiple domain under a same IP.
+
+Here is an example of rule file, and the comments note how the match rules will work.
+
+```sh
+# hosts.txt
+1.2.3.4 abc.com              # `abc.com` will be resolved to `1.2.3.4`
+2.3.4.5 *.def.com            # `sub.def.com` will be `2.3.4.5`, but `def.com` will not
+3.4.5.6 .ghi.com             # `ghi.com` and `sub.ghi.com` will both be `3.4.5.6`
+2001::1 jkl.*                # `jkl.com`, `jkl.net` and `jkl.co.jp` will be `2001::1`
+4.5.6.7 m.com n.com o.com    # `m.com`, `n.com` and `o.com` will be `4.5.6.7`
+5.6.7.8 /^pqr[0-9]*\./       # regex match
+6.7.8.9 *.stu.com -a.stu.com # `sub.stu.com` will be `6.7.8.9`, but `a.stu.com` will not
+```
+
 ## Extra
 
 ### Create custom parser
@@ -282,8 +307,10 @@ class example {
      * Test if the domain matches one of the rules
      *
      * If it matches, return an object that has a `server` field,
-     * and the value is the server that passed to `this.init()`
-     * If it doesn't match, return `null`
+     * and the value is the server that passed to `this.init()`.
+     * If it doesn't match, but match a rule that can be resolved directly,
+     * set a `resolve` field with `type` and `data` subfield.
+     * And if it doesn't match again, return `null`.
      * 
      * @public 
      * @param {string} host - the domain name needs to be checked
@@ -295,6 +322,14 @@ class example {
             return {
                 server: this.server
             };
+        }
+        if (hostMatchResolve(host, this.parsedRules)) {
+            return {
+                resolve: {
+                    type: 'A',
+                    data: '1.2.3.4'
+                }
+            }
         }
         return null;
     }
