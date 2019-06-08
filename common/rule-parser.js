@@ -142,7 +142,7 @@ class RuleParser {
 		}).filter(e => e);
 	}
 
-	resolve(domain) {
+	resolve(domain, ...rest) {
 		domain = domain.toLowerCase();
 		const len = domain.length;
 		// remove the last dot, but keep the dot if querying root server
@@ -151,7 +151,7 @@ class RuleParser {
 		}
 		for (let rule of this.rules) {
 			const { index, parser } = rule;
-			const result = parser.test(domain);
+			const result = parser.test(domain, ...rest);
 			if (result) {
 				return Object.assign({ index }, result);
 			}
