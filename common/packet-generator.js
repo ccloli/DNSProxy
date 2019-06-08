@@ -55,11 +55,15 @@ const generateQuestion = (data) => {
 	// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 	// |                     QCLASS                    |
 	// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	const Name = intToBuffer(generateLookupName(data.Name));
-	const Type = intToBuffer(data.Type, 2);
-	const Class = intToBuffer(data.Class, 2);
+	const result = data.map(item => {
+		const Name = generateLookupName(item.Name);
+		const Type = intToBuffer(item.Type, 2);
+		const Class = intToBuffer(item.Class, 2);
+
+		return Buffer.concat([Name, Type, Class]);
+	});
 	
-	return Buffer.concat([Name, Type, Class]);
+	return Buffer.concat(result);
 };
 
 const generateAnswer = (data) => {
@@ -78,14 +82,18 @@ const generateAnswer = (data) => {
 	// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--|
 	// :                     RDATA                     :
 	// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	const Name = intToBuffer(generateLookupName(data.Name));
-	const Type = intToBuffer(data.Type, 2);
-	const Class = intToBuffer(data.Class, 2);
-	const TTL = intToBuffer(data.TTL, 4);
-	const RDLength = intToBuffer(data.RDLength, 2);
-	const RData = data.RData;
+	const result = data.map(item => {
+		const Name = generateLookupName(item.Name);
+		const Type = intToBuffer(item.Type, 2);
+		const Class = intToBuffer(item.Class, 2);
+		const TTL = intToBuffer(item.TTL, 4);
+		const RDLength = intToBuffer(item.RDLength, 2);
+		const RData = item.RData;
 
-	return Buffer.concat([Name, Type, Class, TTL, RDLength, RData]);
+		return Buffer.concat([Name, Type, Class, TTL, RDLength, RData]);
+	});
+
+	return Buffer.concat(result);
 };
 
 // Authority and Additional are using the same struct as Answer
