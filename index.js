@@ -86,16 +86,16 @@ const init = (input) => {
 		}
 	};
 
-	if (process.stdin) {
-		process.stdin.setRawMode(true);
-		process.stdin.resume();
-		process.stdin.on('data', closeListener);
+// 	if (process.stdin) {
+// 		process.stdin.setRawMode(true);
+// 		process.stdin.resume();
+// 		process.stdin.on('data', closeListener);
 
-		console.log('Press ^R to reload, ^C or ^Z to exit');
-	}
-	else {
-		console.log(`Cannot listen to stdin, if you're using DNSProxy in startup script, try killing pid ${process.pid} to terminate`);
-	}
+// 		console.log('Press ^R to reload, ^C or ^Z to exit');
+// 	}
+// 	else {
+// 		console.log(`Cannot listen to stdin, if you're using DNSProxy in startup script, try killing pid ${process.pid} to terminate`);
+// 	}
 };
 
 const printHelp = () => {
